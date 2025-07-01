@@ -1,35 +1,43 @@
-import { useState } from 'react'
-import reactLogo from './assets/react.svg'
-import viteLogo from '/vite.svg'
-import './App.css'
+import { useState, useEffect } from "react";
+import axios from "axios";
 
 function App() {
-  const [count, setCount] = useState(0)
+  const [incidents, setIncidents] = useState([]);
+  const [loading, setLoading] = useState(true);
+
+  // useEffect se lance une seule fois au chargement du composant
+  useEffect(() => {
+    // On définit une fonction asynchrone pour récupérer les données
+    const fetchIncidents = async () => {
+      try {
+        const response = await axios.get("/api/incidents");
+        setIncidents(response.data); // On met les données dans le state
+      } catch (error) {
+        console.error("Erreur lors de la récupération des incidents:", error);
+      } finally {
+        setLoading(false); // On arrête le chargement
+      }
+    };
+
+    fetchIncidents();
+  }, []); // Le tableau vide [] signifie que l'effet ne se relance pas
+
+  if (loading) {
+    return <p>Chargement des incidents...</p>;
+  }
 
   return (
-    <>
-      <div>
-        <a href="https://vite.dev" target="_blank">
-          <img src={viteLogo} className="logo" alt="Vite logo" />
-        </a>
-        <a href="https://react.dev" target="_blank">
-          <img src={reactLogo} className="logo react" alt="React logo" />
-        </a>
-      </div>
-      <h1>Vite + React</h1>
-      <div className="card">
-        <button onClick={() => setCount((count) => count + 1)}>
-          count is {count}
-        </button>
-        <p>
-          Edit <code>src/App.jsx</code> and save to test HMR
-        </p>
-      </div>
-      <p className="read-the-docs">
-        Click on the Vite and React logos to learn more
-      </p>
-    </>
-  )
+    <div>
+      <h1>Liste des Incidents</h1>
+      <ul>
+        {incidents.map((incident) => (
+          <li key={incident.id}>
+            {incident.title} - <i>signalé par {incident.user.name}</i>
+          </li>
+        ))}
+      </ul>
+    </div>
+  );
 }
 
-export default App
+export default App;
