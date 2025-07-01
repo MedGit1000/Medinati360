@@ -13,6 +13,19 @@ return new class extends Migration
     {
         Schema::create('incidents', function (Blueprint $table) {
             $table->id();
+
+            $table->string('title');
+            $table->text('description');
+            $table->string('photo_path')->nullable();
+            $table->string('status')->default('Reçu');
+
+            $table->decimal('latitude', 10, 7);
+            $table->decimal('longitude', 10, 7);
+
+            // --- Clés Étrangères ---
+            $table->foreignId('user_id')->constrained()->onDelete('cascade');
+            $table->foreignId('category_id')->constrained()->onDelete('cascade'); // <-- LIGNE AJOUTÉE
+
             $table->timestamps();
         });
     }
