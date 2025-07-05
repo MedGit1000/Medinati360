@@ -1,38 +1,51 @@
+// src/App.jsx
+
 import { useState, useEffect } from "react";
 import axios from "axios";
+import IncidentForm from "./components/IncidentForm";
 
 function App() {
   const [incidents, setIncidents] = useState([]);
   const [loading, setLoading] = useState(true);
 
-  // useEffect se lance une seule fois au chargement du composant
-  useEffect(() => {
-    // On définit une fonction asynchrone pour récupérer les données
-    const fetchIncidents = async () => {
-      try {
-        const response = await axios.get("/api/incidents");
-        setIncidents(response.data); // On met les données dans le state
-      } catch (error) {
-        console.error("Erreur lors de la récupération des incidents:", error);
-      } finally {
-        setLoading(false); // On arrête le chargement
-      }
-    };
+  // Cette fonction récupère la liste initiale des incidents
+  const fetchIncidents = async () => {
+    try {
+      const response = await axios.get("/api/incidents");
+      setIncidents(response.data);
+    } catch (error) {
+      console.error("Erreur lors de la récupération des incidents:", error);
+    } finally {
+      setLoading(false);
+    }
+  };
 
+  // Se lance une seule fois au chargement
+  useEffect(() => {
     fetchIncidents();
-  }, []); // Le tableau vide [] signifie que l'effet ne se relance pas
+  }, []);
+
+  // Cette fonction est appelée par le formulaire quand un nouvel incident est créé
+  // Elle ajoute le nouvel incident au début de la liste existante
+  const handleIncidentCreated = (newIncident) => {
+    setIncidents((prevIncidents) => [newIncident, ...prevIncidents]);
+  };
 
   if (loading) {
-    return <p>Chargement des incidents...</p>;
+    return <p>Chargement...</p>;
   }
 
   return (
-    <div>
+    <div style={{ padding: "20px" }}>
+      {/* On passe la fonction en props au composant formulaire */}
+      <IncidentForm onIncidentCreated={handleIncidentCreated} />
+      <hr style={{ margin: "20px 0" }} />
       <h1>Liste des Incidents</h1>
       <ul>
         {incidents.map((incident) => (
           <li key={incident.id}>
-            {incident.title} - <i>signalé par {incident.user.name}</i>
+            <strong>{incident.title}</strong> -{" "}
+            <i>signalé par {incident.user.name}</i>
           </li>
         ))}
       </ul>

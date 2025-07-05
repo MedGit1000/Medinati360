@@ -16,3 +16,10 @@ Route::get('/incidents', [IncidentController::class, 'index']);
 Route::post('/register', [AuthController::class, 'register']);
 Route::post('/login', [AuthController::class, 'login']);
 Route::get('/incidents', [IncidentController::class, 'index']);
+
+// Routes Protégées (nécessitent un token)
+Route::middleware('auth:sanctum')->group(function () {
+    Route::post('/incidents', [IncidentController::class, 'store']);
+    // On ajoutera la route de déconnexion ici plus tard
+    // Route::post('/logout', [AuthController::class, 'logout']);
+});
