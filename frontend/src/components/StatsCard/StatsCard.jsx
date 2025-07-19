@@ -1,11 +1,12 @@
 import React from "react";
 import {
   AlertCircle,
-  XCircle,
+  AlertTriangle,
   Clock,
   CheckCircle,
   TrendingUp,
   TrendingDown,
+  Activity,
 } from "lucide-react";
 import "./StatsCard.css";
 
@@ -13,10 +14,10 @@ const StatsCard = ({ title, value, type, trend, trendUp }) => {
   const getIcon = () => {
     switch (type) {
       case "total":
+        return <Activity size={24} />;
+      case "new":
         return <AlertCircle size={24} />;
-      case "critical":
-        return <XCircle size={24} />;
-      case "open":
+      case "progress":
         return <Clock size={24} />;
       case "resolved":
         return <CheckCircle size={24} />;
@@ -27,12 +28,14 @@ const StatsCard = ({ title, value, type, trend, trendUp }) => {
 
   const getColorClass = () => {
     switch (type) {
-      case "critical":
-        return "stats-card-critical";
-      case "open":
-        return "stats-card-warning";
+      case "new":
+        return "stats-card-new";
+      case "progress":
+        return "stats-card-progress";
       case "resolved":
-        return "stats-card-success";
+        return "stats-card-resolved";
+      case "total":
+        return "stats-card-primary";
       default:
         return "stats-card-primary";
     }

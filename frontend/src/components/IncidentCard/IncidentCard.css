@@ -34,15 +34,15 @@
     margin-top: 2px;
 }
 
-.status-icon.critical {
-    color: #dc2626;
+.status-icon.new {
+    color: #3b82f6;
 }
 
-.status-icon.warning {
+.status-icon.progress {
     color: #f59e0b;
 }
 
-.status-icon.success {
+.status-icon.resolved {
     color: #10b981;
 }
 
@@ -63,7 +63,8 @@
     line-height: 1.5;
 }
 
-.priority-badge {
+/* Status Badge */
+.status-badge {
     padding: 4px 12px;
     border-radius: 16px;
     font-size: 12px;
@@ -71,32 +72,33 @@
     flex-shrink: 0;
 }
 
-.priority-high {
-    background-color: #fee2e2;
-    color: #991b1b;
+.status-badge.status-new {
+    background-color: #dbeafe;
+    color: #1e40af;
 }
 
-.priority-medium {
+.status-badge.status-progress {
     background-color: #fef3c7;
     color: #92400e;
 }
 
-.priority-low {
+.status-badge.status-resolved {
     background-color: #d1fae5;
     color: #065f46;
 }
 
-.dark-mode .priority-high {
-    background-color: rgba(220, 38, 38, 0.2);
-    color: #fca5a5;
+/* Dark mode status badges */
+.dark-mode .status-badge.status-new {
+    background-color: rgba(59, 130, 246, 0.2);
+    color: #93bbfc;
 }
 
-.dark-mode .priority-medium {
+.dark-mode .status-badge.status-progress {
     background-color: rgba(245, 158, 11, 0.2);
     color: #fbbf24;
 }
 
-.dark-mode .priority-low {
+.dark-mode .status-badge.status-resolved {
     background-color: rgba(16, 185, 129, 0.2);
     color: #6ee7b7;
 }
@@ -126,4 +128,11 @@
     border-radius: 12px;
     font-size: 12px;
     font-weight: 500;
+    color: var(--text-primary);
+}
+
+/* Dark mode adjustments */
+.dark-mode .category-tag {
+    background-color: rgba(255, 255, 255, 0.1);
+    color: var(--text-primary);
 }

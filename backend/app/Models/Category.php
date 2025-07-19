@@ -9,18 +9,8 @@ class Category extends Model
 {
     use HasFactory;
 
-    /**
-     * The attributes that are mass assignable.
-     *
-     * @var array<int, string>
-     */
-    protected $fillable = [
-        'name',
-    ];
+    protected $fillable = ['name', 'icon'];
 
-    /**
-     * Get the incidents for the category.
-     */
     public function incidents()
     {
         return $this->hasMany(Incident::class);

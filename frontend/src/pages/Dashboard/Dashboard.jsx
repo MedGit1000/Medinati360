@@ -17,18 +17,18 @@ const Dashboard = ({ incidents, setIncidents }) => {
       trendUp: true,
     },
     {
-      title: "Critiques",
-      value: incidents.filter((i) => i.status === "critical").length,
-      type: "critical",
+      title: "Nouveaux",
+      value: incidents.filter((i) => i.status === "Reçu").length,
+      type: "new",
     },
     {
       title: "En cours",
-      value: incidents.filter((i) => i.status === "open").length,
-      type: "open",
+      value: incidents.filter((i) => i.status === "En cours").length,
+      type: "progress",
     },
     {
       title: "Résolus",
-      value: incidents.filter((i) => i.status === "resolved").length,
+      value: incidents.filter((i) => i.status === "Résolu").length,
       type: "resolved",
     },
   ];

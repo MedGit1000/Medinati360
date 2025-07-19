@@ -9,20 +9,26 @@ class Incident extends Model
 {
     use HasFactory;
 
-    /**
-     * The attributes that are mass assignable.
-     *
-     * @var array<int, string>
-     */
     protected $fillable = [
         'title',
         'description',
         'photo_path',
         'status',
+        'is_approved',
+        'approved_by',
+        'approved_at',
+        'rejection_reason',
         'latitude',
         'longitude',
         'user_id',
-        'category_id',
+        'category_id'
+    ];
+
+    protected $casts = [
+        'is_approved' => 'boolean',
+        'approved_at' => 'datetime',
+        'latitude' => 'float',
+        'longitude' => 'float',
     ];
 
     /**
@@ -34,10 +40,18 @@ class Incident extends Model
     }
 
     /**
-     * Get the category that the incident belongs to.
+     * Get the category of the incident.
      */
     public function category()
     {
         return $this->belongsTo(Category::class);
+    }
+
+    /**
+     * Get the admin who approved/rejected the incident.
+     */
+    public function approvedBy()
+    {
+        return $this->belongsTo(User::class, 'approved_by');
     }
 }

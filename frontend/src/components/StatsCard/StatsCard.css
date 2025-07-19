@@ -75,29 +75,29 @@
     color: #3b82f6;
 }
 
-.stats-card-critical .stats-card-value {
-    color: #dc2626;
+.stats-card-new .stats-card-value {
+    color: #3b82f6;
 }
 
-.stats-card-critical .stats-card-icon {
-    background-color: rgba(239, 68, 68, 0.1);
-    color: #dc2626;
+.stats-card-new .stats-card-icon {
+    background-color: rgba(59, 130, 246, 0.1);
+    color: #3b82f6;
 }
 
-.stats-card-warning .stats-card-value {
+.stats-card-progress .stats-card-value {
     color: #f59e0b;
 }
 
-.stats-card-warning .stats-card-icon {
+.stats-card-progress .stats-card-icon {
     background-color: rgba(245, 158, 11, 0.1);
     color: #f59e0b;
 }
 
-.stats-card-success .stats-card-value {
+.stats-card-resolved .stats-card-value {
     color: #10b981;
 }
 
-.stats-card-success .stats-card-icon {
+.stats-card-resolved .stats-card-icon {
     background-color: rgba(16, 185, 129, 0.1);
     color: #10b981;
 }
@@ -107,14 +107,14 @@
     background-color: rgba(59, 130, 246, 0.2);
 }
 
-.dark-mode .stats-card-critical .stats-card-icon {
-    background-color: rgba(239, 68, 68, 0.2);
+.dark-mode .stats-card-new .stats-card-icon {
+    background-color: rgba(59, 130, 246, 0.2);
 }
 
-.dark-mode .stats-card-warning .stats-card-icon {
+.dark-mode .stats-card-progress .stats-card-icon {
     background-color: rgba(245, 158, 11, 0.2);
 }
 
-.dark-mode .stats-card-success .stats-card-icon {
+.dark-mode .stats-card-resolved .stats-card-icon {
     background-color: rgba(16, 185, 129, 0.2);
 }

@@ -13,15 +13,16 @@ import {
 import "./Home.css";
 
 const Home = ({ setActiveView, incidents }) => {
-  // Calculer les statistiques
+  // Calculer les statistiques avec les bonnes valeurs de statut
   const stats = {
     total: incidents.length,
-    critical: incidents.filter((i) => i.status === "critical").length,
-    resolved: incidents.filter((i) => i.status === "resolved").length,
+    received: incidents.filter((i) => i.status === "Reçu").length,
+    inProgress: incidents.filter((i) => i.status === "En cours").length,
+    resolved: incidents.filter((i) => i.status === "Résolu").length,
     resolvedToday: incidents.filter((i) => {
       const today = new Date().toDateString();
       return (
-        i.status === "resolved" && new Date(i.created).toDateString() === today
+        i.status === "Résolu" && new Date(i.created_at).toDateString() === today
       );
     }).length,
   };
@@ -63,7 +64,7 @@ const Home = ({ setActiveView, incidents }) => {
     },
     {
       title: "Incidents en cours",
-      description: `${stats.total - stats.resolved} incidents actifs`,
+      description: `${stats.inProgress} incidents actifs`,
       icon: <Clock />,
       color: "action-yellow",
       action: () => setActiveView("incidents"),
@@ -76,6 +77,20 @@ const Home = ({ setActiveView, incidents }) => {
       action: () => setActiveView("users"),
     },
   ];
+
+  // Fonction pour obtenir la classe CSS du statut
+  const getStatusClass = (status) => {
+    switch (status) {
+      case "Reçu":
+        return "status-new";
+      case "En cours":
+        return "status-progress";
+      case "Résolu":
+        return "status-resolved";
+      default:
+        return "";
+    }
+  };
 
   return (
     <div className="home-page">
@@ -100,8 +115,8 @@ const Home = ({ setActiveView, incidents }) => {
               <div className="hero-stat-label">Incidents totaux</div>
             </div>
             <div className="hero-stat">
-              <div className="hero-stat-value">{stats.critical}</div>
-              <div className="hero-stat-label">Critiques</div>
+              <div className="hero-stat-value">{stats.received}</div>
+              <div className="hero-stat-label">Nouveaux</div>
             </div>
             <div className="hero-stat">
               <div className="hero-stat-value">{stats.resolvedToday}</div>
@@ -109,7 +124,7 @@ const Home = ({ setActiveView, incidents }) => {
             </div>
             <div className="hero-stat">
               <div className="hero-stat-value">
-                {stats.resolved > 0
+                {stats.total > 0
                   ? Math.round((stats.resolved / stats.total) * 100)
                   : 0}
                 %
@@ -168,30 +183,37 @@ const Home = ({ setActiveView, incidents }) => {
       <section className="activity-section">
         <h2 className="section-title">Activité récente</h2>
         <div className="activity-list">
-          {incidents.slice(0, 3).map((incident, index) => (
+          {incidents.slice(0, 5).map((incident) => (
             <div key={incident.id} className="activity-item">
               <div className="activity-time">
-                {new Date(incident.created).toLocaleTimeString("fr-FR", {
-                  hour: "2-digit",
-                  minute: "2-digit",
-                })}
+                {incident.created_at
+                  ? new Date(incident.created_at).toLocaleTimeString("fr-FR", {
+                      hour: "2-digit",
+                      minute: "2-digit",
+                    })
+                  : "N/A"}
               </div>
               <div className="activity-content">
                 <div className="activity-title">{incident.title}</div>
                 <div className="activity-meta">
-                  Assigné à {incident.assignee || "Non assigné"} •{" "}
-                  {incident.category}
+                  {incident.user?.name
+                    ? `Créé par ${incident.user.name}`
+                    : "Anonyme"}{" "}
+                  • {incident.category?.name || "Sans catégorie"}
                 </div>
               </div>
-              <div className={`activity-status status-${incident.status}`}>
-                {incident.status === "critical"
-                  ? "Critique"
-                  : incident.status === "open"
-                  ? "En cours"
-                  : "Résolu"}
+              <div
+                className={`activity-status ${getStatusClass(incident.status)}`}
+              >
+                {incident.status}
               </div>
             </div>
           ))}
+          {incidents.length === 0 && (
+            <div className="no-activity">
+              <p>Aucun incident récent</p>
+            </div>
+          )}
         </div>
       </section>
     </div>

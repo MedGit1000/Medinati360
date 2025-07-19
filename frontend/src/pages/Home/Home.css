@@ -386,12 +386,13 @@
     font-weight: 600;
 }
 
-.status-critical {
-    background-color: #fee2e2;
-    color: #dc2626;
+/* Status classes for French status values */
+.status-new {
+    background-color: #dbeafe;
+    color: #1e40af;
 }
 
-.status-open {
+.status-progress {
     background-color: #fef3c7;
     color: #d97706;
 }
@@ -399,6 +400,17 @@
 .status-resolved {
     background-color: #d1fae5;
     color: #065f46;
+}
+
+/* No activity message */
+.no-activity {
+    text-align: center;
+    padding: 60px 20px;
+    color: var(--text-secondary);
+}
+
+.no-activity p {
+    font-size: 16px;
 }
 
 /* Dark mode adjustments */
@@ -426,12 +438,12 @@
     background-color: rgba(16, 185, 129, 0.2);
 }
 
-.dark-mode .status-critical {
-    background-color: rgba(239, 68, 68, 0.2);
-    color: #fca5a5;
+.dark-mode .status-new {
+    background-color: rgba(59, 130, 246, 0.2);
+    color: #93bbfc;
 }
 
-.dark-mode .status-open {
+.dark-mode .status-progress {
     background-color: rgba(245, 158, 11, 0.2);
     color: #fbbf24;
 }

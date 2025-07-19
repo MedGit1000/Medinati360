@@ -1,5 +1,5 @@
 import React, { useState } from "react";
-import { Plus, Search, Filter } from "lucide-react";
+import { Plus, Search } from "lucide-react";
 import IncidentCard from "../../components/IncidentCard/IncidentCard";
 import IncidentForm from "../../components/IncidentForm/IncidentForm";
 import "./Incidents.css";
@@ -8,7 +8,12 @@ const Incidents = ({ incidents, setIncidents }) => {
   const [showIncidentForm, setShowIncidentForm] = useState(false);
   const [searchTerm, setSearchTerm] = useState("");
   const [statusFilter, setStatusFilter] = useState("all");
-  const [priorityFilter, setPriorityFilter] = useState("all");
+  const [categoryFilter, setCategoryFilter] = useState("all");
+
+  // Extraire les catégories uniques
+  const categories = [
+    ...new Set(incidents.map((i) => i.category?.name).filter(Boolean)),
+  ];
 
   // Filtrer les incidents
   const filteredIncidents = incidents.filter((incident) => {
@@ -17,10 +22,10 @@ const Incidents = ({ incidents, setIncidents }) => {
       incident.description.toLowerCase().includes(searchTerm.toLowerCase());
     const matchesStatus =
       statusFilter === "all" || incident.status === statusFilter;
-    const matchesPriority =
-      priorityFilter === "all" || incident.priority === priorityFilter;
+    const matchesCategory =
+      categoryFilter === "all" || incident.category?.name === categoryFilter;
 
-    return matchesSearch && matchesStatus && matchesPriority;
+    return matchesSearch && matchesStatus && matchesCategory;
   });
 
   return (
@@ -55,20 +60,22 @@ const Incidents = ({ incidents, setIncidents }) => {
             className="filter-select"
           >
             <option value="all">Tous les statuts</option>
-            <option value="critical">Critique</option>
-            <option value="open">En cours</option>
-            <option value="resolved">Résolu</option>
+            <option value="Reçu">Nouveaux</option>
+            <option value="En cours">En cours</option>
+            <option value="Résolu">Résolus</option>
           </select>
 
           <select
-            value={priorityFilter}
-            onChange={(e) => setPriorityFilter(e.target.value)}
+            value={categoryFilter}
+            onChange={(e) => setCategoryFilter(e.target.value)}
             className="filter-select"
           >
-            <option value="all">Toutes les priorités</option>
-            <option value="high">Haute</option>
-            <option value="medium">Moyenne</option>
-            <option value="low">Basse</option>
+            <option value="all">Toutes les catégories</option>
+            {categories.map((category) => (
+              <option key={category} value={category}>
+                {category}
+              </option>
+            ))}
           </select>
         </div>
       </div>
@@ -76,8 +83,8 @@ const Incidents = ({ incidents, setIncidents }) => {
       <div className="incidents-container">
         <div className="incidents-count">
           {filteredIncidents.length} incident
-          {filteredIncidents.length > 1 ? "s" : ""} trouvé
-          {filteredIncidents.length > 1 ? "s" : ""}
+          {filteredIncidents.length !== 1 ? "s" : ""} trouvé
+          {filteredIncidents.length !== 1 ? "s" : ""}
         </div>
 
         <div className="incidents-grid">
