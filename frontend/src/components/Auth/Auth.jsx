@@ -9,10 +9,11 @@ import {
   Loader,
   AlertCircle,
 } from "lucide-react";
-import apiService from "../../services/apiService";
+import { useAuth } from "../../hooks/useAuth"; // Importer le hook useAuth
 import "./Auth.css";
 
 const Auth = ({ onClose, onSuccess }) => {
+  const { login, register } = useAuth(); // Utiliser le hook
   const [isLogin, setIsLogin] = useState(true);
   const [showPassword, setShowPassword] = useState(false);
   const [loading, setLoading] = useState(false);
@@ -33,26 +34,25 @@ const Auth = ({ onClose, onSuccess }) => {
     try {
       let response;
       if (isLogin) {
-        response = await apiService.auth.login({
+        response = await login({ // Utiliser la fonction login du hook
           email: formData.email,
           password: formData.password,
         });
       } else {
-        // Validation pour l'inscription
         if (formData.password !== formData.password_confirmation) {
           setError("Les mots de passe ne correspondent pas");
           setLoading(false);
           return;
         }
 
-        response = await apiService.auth.register({
+        response = await register({ // Utiliser la fonction register du hook
           name: formData.name,
           email: formData.email,
           password: formData.password,
+          password_confirmation: formData.password_confirmation,
         });
       }
 
-      // Succès
       onSuccess(response.user);
       onClose();
     } catch (err) {
@@ -68,7 +68,6 @@ const Auth = ({ onClose, onSuccess }) => {
       ...prev,
       [name]: value,
     }));
-    // Effacer l'erreur quand l'utilisateur tape
     if (error) setError("");
   };
 

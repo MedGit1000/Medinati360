@@ -15,6 +15,7 @@ return Application::configure(basePath: dirname(__DIR__))
         // Register middleware aliases
         $middleware->alias([
             'admin' => \App\Http\Middleware\IsAdmin::class,
+            'superadmin' => \App\Http\Middleware\IsSuperAdmin::class,
         ]);
 
         // API middleware group

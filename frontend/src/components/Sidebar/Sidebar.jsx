@@ -8,6 +8,7 @@ import {
   Shield,
   FileText,
   Map,
+  UserCheck, // A better icon for the user management page
 } from "lucide-react";
 import "./Sidebar.css";
 
@@ -16,7 +17,7 @@ const Sidebar = ({
   activeView,
   setActiveView,
   incidentStats,
-  isAdmin,
+  userRole, // Use userRole instead of isAdmin
   isAuthenticated,
 }) => {
   const menuItems = [
@@ -50,8 +51,14 @@ const Sidebar = ({
       label: "Administration",
       icon: <Shield size={20} />,
       badge: incidentStats?.pending || 0,
-      showForAdmin: true,
+      showForAdmin: true, // Will show for 'admin' and 'superadmin'
       badgeType: "warning",
+    },
+    {
+      id: "user-management", // The new view for the management page
+      label: "Gestion Users",
+      icon: <UserCheck size={20} />,
+      showForSuperAdmin: true, // Will only show for 'superadmin'
     },
     {
       id: "map",
@@ -60,17 +67,12 @@ const Sidebar = ({
       showAlways: true,
     },
     {
-      id: "users",
-      label: "Utilisateurs",
-      icon: <Users size={20} />,
-      showForAdmin: true,
-    },
-    {
       id: "profile",
       label: "Profil",
       icon: <Users size={20} />,
       showForAuth: true,
     },
+    // Optional: Kept settings, remove if not needed
     {
       id: "settings",
       label: "Paramètres",
@@ -79,14 +81,18 @@ const Sidebar = ({
     },
   ];
 
-  // Debug log
-  console.log("Sidebar props:", { isAdmin, isAuthenticated });
-
-  // Filter menu items based on user role
+  // Updated filter logic to handle roles
   const visibleMenuItems = menuItems.filter((item) => {
     if (item.showAlways) return true;
-    if (item.showForAdmin && isAdmin === true) return true;
-    if (item.showForAuth && isAuthenticated === true) return true;
+    if (item.showForAuth && isAuthenticated) return true;
+    // Show "Administration" for both admin and superadmin
+    if (
+      item.showForAdmin &&
+      (userRole === "admin" || userRole === "superadmin")
+    )
+      return true;
+    // Show "User Management" only for superadmin
+    if (item.showForSuperAdmin && userRole === "superadmin") return true;
     return false;
   });
 

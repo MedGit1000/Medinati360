@@ -1,8 +1,29 @@
+/* ---------- Design tokens ---------- */
+:root {
+    /* status colours */
+    --pending-bg: #fef3c7;
+    --pending-fg: #92400e;
+    --approved-bg: #d1fae5;
+    --approved-fg: #065f46;
+    --rejected-bg: #fee2e2;
+    --rejected-fg: #991b1b;
+}
+
+.dark-mode {
+    --pending-bg: rgba(245, 158, 11, 0.2);
+    --pending-fg: #fbbf24;
+    --approved-bg: rgba(16, 185, 129, 0.2);
+    --approved-fg: #6ee7b7;
+    --rejected-bg: rgba(239, 68, 68, 0.2);
+    --rejected-fg: #fca5a5;
+}
+
+/* ---------- Card shell ---------- */
 .incident-card {
     padding: 20px 24px;
     border-bottom: 1px solid var(--border-color);
-    transition: background-color 0.2s ease;
     cursor: pointer;
+    transition: background-color 0.2s ease;
 }
 
 .incident-card:hover {
@@ -13,16 +34,18 @@
     border-bottom: none;
 }
 
+/* ---------- Header ---------- */
 .incident-card-header {
     display: flex;
     justify-content: space-between;
     align-items: flex-start;
+    gap: 16px;
     margin-bottom: 12px;
 }
 
+/* left-side column (icon + title + excerpt) */
 .incident-status {
     display: flex;
-    align-items: flex-start;
     gap: 12px;
     flex: 1;
 }
@@ -30,24 +53,20 @@
 .status-icon {
     width: 20px;
     height: 20px;
-    flex-shrink: 0;
     margin-top: 2px;
+    flex-shrink: 0;
 }
 
-.status-icon.new {
-    color: #3b82f6;
+.status-icon.pending {
+    color: var(--pending-fg);
 }
 
-.status-icon.progress {
-    color: #f59e0b;
+.status-icon.approved {
+    color: var(--approved-fg);
 }
 
-.status-icon.resolved {
-    color: #10b981;
-}
-
-.incident-info {
-    flex: 1;
+.status-icon.rejected {
+    color: var(--rejected-fg);
 }
 
 .incident-title {
@@ -63,7 +82,7 @@
     line-height: 1.5;
 }
 
-/* Status Badge */
+/* right-side badge */
 .status-badge {
     padding: 4px 12px;
     border-radius: 16px;
@@ -72,58 +91,33 @@
     flex-shrink: 0;
 }
 
-.status-badge.status-new {
-    background-color: #dbeafe;
-    color: #1e40af;
+.status-badge.pending {
+    background: var(--pending-bg);
+    color: var(--pending-fg);
 }
 
-.status-badge.status-progress {
-    background-color: #fef3c7;
-    color: #92400e;
+.status-badge.approved {
+    background: var(--approved-bg);
+    color: var(--approved-fg);
 }
 
-.status-badge.status-resolved {
-    background-color: #d1fae5;
-    color: #065f46;
+.status-badge.rejected {
+    background: var(--rejected-bg);
+    color: var(--rejected-fg);
 }
 
-/* Dark mode status badges */
-.dark-mode .status-badge.status-new {
-    background-color: rgba(59, 130, 246, 0.2);
-    color: #93bbfc;
-}
-
-.dark-mode .status-badge.status-progress {
-    background-color: rgba(245, 158, 11, 0.2);
-    color: #fbbf24;
-}
-
-.dark-mode .status-badge.status-resolved {
-    background-color: rgba(16, 185, 129, 0.2);
-    color: #6ee7b7;
-}
-
+/* ---------- Footer meta ---------- */
 .incident-meta {
     display: flex;
+    flex-wrap: wrap;
     align-items: center;
     gap: 16px;
-    flex-wrap: wrap;
-}
-
-.meta-item {
-    display: flex;
-    align-items: center;
-    gap: 6px;
     font-size: 13px;
     color: var(--text-secondary);
 }
 
-.meta-item svg {
-    flex-shrink: 0;
-}
-
 .category-tag {
-    background-color: var(--bg-secondary);
+    background: var(--bg-secondary);
     padding: 2px 10px;
     border-radius: 12px;
     font-size: 12px;
@@ -131,8 +125,6 @@
     color: var(--text-primary);
 }
 
-/* Dark mode adjustments */
 .dark-mode .category-tag {
-    background-color: rgba(255, 255, 255, 0.1);
-    color: var(--text-primary);
+    background: rgba(255, 255, 255, 0.1);
 }

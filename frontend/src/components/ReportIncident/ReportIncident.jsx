@@ -142,55 +142,90 @@ const ReportIncident = ({ onClose, onSuccess }) => {
     }
   };
 
+  // const handleSubmit = async () => {
+  //   console.log("Submitting form with data:", formData);
+  //   setLoading(true);
+  //   setError("");
+
+  //   try {
+  //     // Vérifier l'authentification
+  //     if (!apiService.auth.isAuthenticated()) {
+  //       setError("Vous devez être connecté pour signaler un incident");
+  //       setLoading(false);
+  //       return;
+  //     }
+
+  //     // Validation
+  //     if (!formData.title || !formData.description || !formData.category_id) {
+  //       setError("Veuillez remplir tous les champs obligatoires");
+  //       setLoading(false);
+  //       return;
+  //     }
+
+  //     if (!formData.latitude || !formData.longitude) {
+  //       setError("Veuillez indiquer la localisation de l'incident");
+  //       setLoading(false);
+  //       return;
+  //     }
+
+  //     console.log("Sending to API...");
+
+  //     // Créer l'incident
+  //     const response = await apiService.incidents.create(formData);
+  //     console.log("API Response:", response);
+
+  //     // Afficher le message de succès
+  //     setSuccess(true);
+
+  //     // Attendre un peu avant de fermer pour montrer le message de succès
+  //     setTimeout(() => {
+  //       if (response.incident) {
+  //         onSuccess(response.incident);
+  //       } else {
+  //         onSuccess(response);
+  //       }
+  //       onClose();
+  //     }, 2000);
+  //   } catch (err) {
+  //     console.error("Erreur création incident:", err);
+  //     setError(err.message || "Erreur lors de la création de l'incident");
+  //   } finally {
+  //     setLoading(false);
+  //   }
+  // };
+  // PASTE THIS NEW FUNCTION IN ITS PLACE
+  // In ReportIncident.jsx, replace the whole handleSubmit function with this one:
   const handleSubmit = async () => {
-    console.log("Submitting form with data:", formData);
+    // 1. Perform validation
+    if (!formData.title || !formData.description || !formData.category_id) {
+      setError("Veuillez remplir tous les champs obligatoires.");
+      return;
+    }
+    if (!formData.latitude || !formData.longitude) {
+      setError("Veuillez indiquer la localisation de l'incident.");
+      return;
+    }
+
     setLoading(true);
     setError("");
 
     try {
-      // Vérifier l'authentification
-      if (!apiService.auth.isAuthenticated()) {
-        setError("Vous devez être connecté pour signaler un incident");
-        setLoading(false);
-        return;
-      }
+      // 2. Call the API. We don't need the response variable, which fixes the error.
+      await apiService.incidents.create(formData);
 
-      // Validation
-      if (!formData.title || !formData.description || !formData.category_id) {
-        setError("Veuillez remplir tous les champs obligatoires");
-        setLoading(false);
-        return;
-      }
-
-      if (!formData.latitude || !formData.longitude) {
-        setError("Veuillez indiquer la localisation de l'incident");
-        setLoading(false);
-        return;
-      }
-
-      console.log("Sending to API...");
-
-      // Créer l'incident
-      const response = await apiService.incidents.create(formData);
-      console.log("API Response:", response);
-
-      // Afficher le message de succès
+      // 3. On success, update the UI and call the parent's success handler
       setSuccess(true);
+      setLoading(false); // Stop the spinner
 
-      // Attendre un peu avant de fermer pour montrer le message de succès
+      // 4. After 2 seconds, the parent component will close the modal
       setTimeout(() => {
-        if (response.incident) {
-          onSuccess(response.incident);
-        } else {
-          onSuccess(response);
-        }
-        onClose();
+        onSuccess();
       }, 2000);
     } catch (err) {
-      console.error("Erreur création incident:", err);
-      setError(err.message || "Erreur lors de la création de l'incident");
-    } finally {
-      setLoading(false);
+      // 5. If anything fails, show the error
+      console.error("Incident creation failed:", err);
+      setError(err.message || "Une erreur est survenue lors de la soumission.");
+      setLoading(false); // Stop the spinner on failure
     }
   };
 
@@ -377,6 +412,12 @@ const ReportIncident = ({ onClose, onSuccess }) => {
       </button>
     </div>
   );
+  console.log("DEBUG BUTTON STATE:", {
+    loading: loading,
+    success: success,
+    hasLatitude: !!formData.latitude,
+    hasLongitude: !!formData.longitude,
+  });
 
   return (
     <div className="modal-overlay" onClick={onClose}>

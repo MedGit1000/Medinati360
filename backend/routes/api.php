@@ -3,77 +3,85 @@
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Route;
 use App\Http\Controllers\Api\AuthController;
+use App\Http\Controllers\Api\UserController;
 use App\Http\Controllers\Api\CategoryController;
 use App\Http\Controllers\Api\IncidentController;
 
-// Test route
-Route::get('/test', function () {
-    return response()->json(['status' => 'API working', 'time' => now()]);
-});
+/*
+|--------------------------------------------------------------------------
+| Unauthenticated / diagnostic routes
+|--------------------------------------------------------------------------
+*/
 
-// Debug auth route
+Route::get('/test', fn() => response()->json([
+    'status' => 'API working',
+    'time'   => now(),
+]));
+
 Route::get('/debug-auth', function (Request $request) {
-    $user = null;
-    $sanctumUser = null;
-
-    try {
-        $user = $request->user();
-        $sanctumUser = auth('sanctum')->user();
-    } catch (\Exception $e) {
-        // Ignore
-    }
-
     return response()->json([
-        'has_bearer_token' => !!$request->bearerToken(),
-        'bearer_token_preview' => $request->bearerToken() ? substr($request->bearerToken(), 0, 20) . '...' : null,
-        'request_user' => $user ? [
-            'id' => $user->id,
-            'email' => $user->email,
-            'is_admin' => $user->is_admin
-        ] : null,
-        'sanctum_user' => $sanctumUser ? [
-            'id' => $sanctumUser->id,
-            'email' => $sanctumUser->email,
-            'is_admin' => $sanctumUser->is_admin
-        ] : null,
-        'guards' => [
-            'web' => auth('web')->check(),
+        'bearer_token_preview' => $request->bearerToken()
+            ? substr($request->bearerToken(), 0, 20) . '…'
+            : null,
+        'request_user'  => $request->user(),
+        'sanctum_user'  => auth('sanctum')->user(),
+        'guards'        => [
+            'web'     => auth('web')->check(),
             'sanctum' => auth('sanctum')->check(),
         ],
-        'session_exists' => session()->getId() !== null,
-        'csrf_token' => csrf_token(),
     ]);
 });
 
-// Test approve route
-Route::post('/test-approve/{id}', function ($id) {
-    return response()->json([
-        'message' => 'Test approve route works',
-        'id' => $id,
-        'method' => request()->method()
-    ]);
-});
-
-// Public routes
+/*
+|--------------------------------------------------------------------------
+| Public routes
+|--------------------------------------------------------------------------
+*/
 Route::post('/register', [AuthController::class, 'register']);
-Route::post('/login', [AuthController::class, 'login']);
+Route::post('/login',    [AuthController::class, 'login'])->name('login');
 Route::get('/categories', [CategoryController::class, 'index']);
 
-// Incidents route (accessible to all)
-Route::get('/incidents', [IncidentController::class, 'index']);
+Route::get('/login', function () {
+    return response()->json(['message' => 'Unauthenticated.'], 401);
+})->name('login');
 
-// Protected routes
+/*
+|--------------------------------------------------------------------------
+| Protected routes (require Sanctum token)
+|--------------------------------------------------------------------------
+*/
 Route::middleware('auth:sanctum')->group(function () {
-    // User info
-    Route::get('/user', function (Request $request) {
-        return response()->json($request->user());
+
+    /* --- Incidents --- */
+    Route::get('/incidents',              [IncidentController::class, 'index']);
+    Route::post('/incidents',              [IncidentController::class, 'store']);
+    Route::post('/incidents/{id}/approve', [IncidentController::class, 'approve']);
+    Route::post('/incidents/{id}/reject',  [IncidentController::class, 'reject']);
+    Route::put('/incidents/{id}/status',  [IncidentController::class, 'updateStatus']);
+    Route::get('/my-incidents',           [IncidentController::class, 'myIncidents']);
+
+    /* --- User information --- */
+    Route::get('/user', fn(Request $request) => response()->json($request->user()));
+
+    /* --- User-management (super-admin only) --- */
+    Route::middleware('superadmin')->group(function () {
+        Route::get('/users',               [UserController::class, 'index']);
+        Route::post('/users/{user}/promote', [UserController::class, 'promote']);
+    });
+
+    Route::get('/notifications', function (Request $request) {
+        return $request->user()
+            ->notifications()
+            ->latest()
+            ->take(20)
+            ->get();
+    });
+
+    Route::post('/notifications/{id}/read', function (Request $request, $id) {
+        $notification = $request->user()->notifications()->findOrFail($id);
+        $notification->markAsRead();
+        return response()->noContent();
     });
 
     Route::post('/logout', [AuthController::class, 'logout']);
-    Route::post('/incidents', [IncidentController::class, 'store']);
-
-    // Admin routes
-    Route::post('/incidents/{id}/approve', [IncidentController::class, 'approve']);
-    Route::post('/incidents/{id}/reject', [IncidentController::class, 'reject']);
-    Route::put('/incidents/{id}/status', [IncidentController::class, 'updateStatus']);
 });

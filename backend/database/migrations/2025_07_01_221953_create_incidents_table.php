@@ -13,18 +13,22 @@ return new class extends Migration
     {
         Schema::create('incidents', function (Blueprint $table) {
             $table->id();
-
             $table->string('title');
             $table->text('description');
+            $table->decimal('latitude', 10, 7);
+            $table->decimal('longitude', 10, 7);
             $table->string('photo_path')->nullable();
             $table->string('status')->default('Reçu');
 
-            $table->decimal('latitude', 10, 7);
-            $table->decimal('longitude', 10, 7);
+            // --- Approval System Columns ---
+            $table->boolean('is_approved')->default(false);
+            $table->foreignId('approved_by')->nullable()->constrained('users')->onDelete('set null');
+            $table->timestamp('approved_at')->nullable();
+            $table->text('rejection_reason')->nullable();
 
-            // --- Clés Étrangères ---
+            // --- Foreign Keys ---
             $table->foreignId('user_id')->constrained()->onDelete('cascade');
-            $table->foreignId('category_id')->constrained()->onDelete('cascade'); // <-- LIGNE AJOUTÉE
+            $table->foreignId('category_id')->constrained()->onDelete('cascade');
 
             $table->timestamps();
         });

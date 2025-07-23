@@ -1,0 +1,76 @@
+/* UserManagement.css */
+.user-management-container {
+    padding: 2rem;
+    max-width: 900px;
+    margin: 2rem auto;
+    background-color: #f9fafb;
+    border-radius: 8px;
+}
+
+.user-list {
+    margin-top: 1.5rem;
+    display: flex;
+    flex-direction: column;
+    gap: 0.75rem;
+}
+
+.user-card {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 1rem;
+    background-color: #fff;
+    border: 1px solid #e5e7eb;
+    border-radius: 6px;
+}
+
+.user-info {
+    display: flex;
+    flex-direction: column;
+}
+
+.user-info strong {
+    font-weight: 600;
+}
+
+.user-info span {
+    color: #6b7280;
+    font-size: 0.9rem;
+}
+
+.role-admin {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.5rem;
+    color: #16a34a;
+    font-weight: 600;
+    padding: 0.5rem 0.75rem;
+    background-color: #dcfce7;
+    border-radius: 999px;
+}
+
+.promote-button {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.5rem;
+    padding: 0.5rem 1rem;
+    border: 1px solid #d1d5db;
+    background-color: #fff;
+    color: #374151;
+    cursor: pointer;
+    border-radius: 6px;
+    transition: background-color 0.2s;
+}
+
+.promote-button:hover:not(:disabled) {
+    background-color: #f3f4f6;
+}
+
+.promote-button:disabled {
+    cursor: not-allowed;
+    opacity: 0.7;
+}
+
+.animate-spin-fast {
+    animation: spin 0.5s linear infinite;
+}

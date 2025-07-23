@@ -6,19 +6,18 @@ use Closure;
 use Illuminate\Http\Request;
 use Symfony\Component\HttpFoundation\Response;
 
-class IsAdmin
+class IsSuperAdmin
 {
     /**
      * Handle an incoming request.
      *
      * @param  \Closure(\Illuminate\Http\Request): (\Symfony\Component\HttpFoundation\Response)  $next
      */
-    // In backend/app/Http/Middleware/IsAdmin.php
     public function handle(Request $request, Closure $next): Response
     {
-        if ($request->user() && in_array($request->user()->role, ['admin', 'superadmin'])) {
+        if ($request->user() && $request->user()->role === 'superadmin') {
             return $next($request);
         }
-        return response()->json(['message' => 'Unauthorized: Admin access required.'], 403);
+        return response()->json(['message' => 'Unauthorized: Super Admin access required.'], 403);
     }
 }

@@ -7,6 +7,7 @@ import Incidents from "./pages/Incidents/Incidents";
 import MyIncidents from "./pages/MyIncidents/MyIncidents";
 import AdminPanel from "./pages/AdminPanel/AdminPanel";
 import ReportIncident from "./components/ReportIncident/ReportIncident";
+import UserManagement from "./pages/UserManagement/UserManagement";
 import Auth from "./components/Auth/Auth";
 import { AuthProvider, useAuth } from "./hooks/useAuth";
 import apiService from "./services/apiService";
@@ -72,12 +73,21 @@ function AppContent() {
     }
   };
 
+  // const handleAuthSuccess = () => {
+  //   setShowAuthModal(false);
+  //   // Recharger les incidents après connexion
+  //   loadIncidents();
+  //   // Ouvrir le formulaire de signalement après connexion réussie si nécessaire
+  //   if (!user?.is_admin) {
+  //     setShowReportForm(true);
+  //   }
+  // };
   const handleAuthSuccess = () => {
     setShowAuthModal(false);
-    // Recharger les incidents après connexion
     loadIncidents();
-    // Ouvrir le formulaire de signalement après connexion réussie si nécessaire
-    if (!user?.is_admin) {
+    // This check was using the old 'is_admin' property.
+    // Now, we check if the user's role is 'user'.
+    if (user?.role === "user") {
       setShowReportForm(true);
     }
   };
@@ -97,9 +107,13 @@ function AppContent() {
     ).length,
     total: incidents.length,
     // Stats supplémentaires pour admin
-    pending: user?.is_admin
-      ? incidents.filter((i) => !i.is_approved && !i.rejection_reason).length
-      : 0,
+    // pending: user?.is_admin
+    //   ? incidents.filter((i) => !i.is_approved && !i.rejection_reason).length
+    //   : 0,
+    pending:
+      user?.role === "admin" || user?.role === "superadmin"
+        ? incidents.filter((i) => !i.is_approved && !i.rejection_reason).length
+        : 0,
   };
 
   if (authLoading) {
@@ -131,7 +145,8 @@ function AppContent() {
           activeView={activeView}
           setActiveView={setActiveView}
           incidentStats={incidentStats}
-          isAdmin={user?.is_admin === true}
+          // isAdmin={user?.is_admin === true}
+          userRole={user?.role}
           isAuthenticated={isAuthenticated}
         />
 
@@ -162,7 +177,14 @@ function AppContent() {
             />
           )}
           {activeView === "my-incidents" && isAuthenticated && <MyIncidents />}
-          {activeView === "admin" && user?.is_admin && <AdminPanel />}
+          {/* {activeView === "admin" && user?.is_admin && <AdminPanel />} */}
+          {activeView === "admin" &&
+            (user?.role === "admin" || user?.role === "superadmin") && (
+              <AdminPanel />
+            )}
+          {activeView === "user-management" && user?.role === "superadmin" && (
+            <UserManagement />
+          )}
           {activeView === "map" && (
             <div className="map-placeholder">
               <h2>Carte des incidents</h2>
@@ -185,6 +207,9 @@ function AppContent() {
                 <p>
                   <strong>Rôle:</strong>{" "}
                   {user?.is_admin ? "Administrateur" : "Utilisateur"}
+                  <span style={{ textTransform: "capitalize" }}>
+                    {user?.role}
+                  </span>
                 </p>
                 <p>
                   <strong>Membre depuis:</strong>{" "}

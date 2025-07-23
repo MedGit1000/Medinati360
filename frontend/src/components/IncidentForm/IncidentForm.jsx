@@ -3,15 +3,17 @@
 import { useState } from "react";
 import axios from "axios";
 
-// REMplacez par un token valide obtenu via Postman.
-const API_TOKEN = "COPIEZ-COLLEZ-VOTRE-TOKEN-ICI";
+// Fonction pour récupérer le token depuis le localStorage
+const getToken = () => {
+  return localStorage.getItem("auth_token");
+};
 
 function IncidentForm({ onIncidentCreated }) {
   const [title, setTitle] = useState("");
   const [description, setDescription] = useState("");
   const [latitude, setLatitude] = useState("34.02");
   const [longitude, setLongitude] = useState("-6.84");
-  const [categoryId, setCategoryId] = useState("1"); // On utilise des chaînes de caractères pour les inputs
+  const [categoryId, setCategoryId] = useState("1");
   const [error, setError] = useState("");
   const [isSubmitting, setIsSubmitting] = useState(false);
 
@@ -20,13 +22,20 @@ function IncidentForm({ onIncidentCreated }) {
     setError("");
     setIsSubmitting(true);
 
+    const token = getToken();
+    if (!token) {
+      setError("Vous n'êtes pas authentifié. Veuillez vous connecter.");
+      setIsSubmitting(false);
+      return;
+    }
+
     try {
       const response = await axios.post(
         "/api/incidents",
         { title, description, latitude, longitude, category_id: categoryId },
         {
           headers: {
-            Authorization: `Bearer ${API_TOKEN}`,
+            Authorization: `Bearer ${token}`,
             Accept: "application/json",
           },
         }
@@ -37,7 +46,11 @@ function IncidentForm({ onIncidentCreated }) {
       setTitle("");
       setDescription("");
     } catch (err) {
-      setError("Une erreur est survenue. Vérifiez les champs et votre token.");
+      if (err.response && err.response.status === 401) {
+        setError("Votre session a expiré. Veuillez vous reconnecter.");
+      } else {
+        setError("Une erreur est survenue. Vérifiez les champs.");
+      }
       console.error(err);
     } finally {
       setIsSubmitting(false);
@@ -86,8 +99,6 @@ function IncidentForm({ onIncidentCreated }) {
         </select>
       </div>
 
-      {/* Les champs Latitude et Longitude sont cachés pour l'instant, 
-          on pourrait les remplir automatiquement avec le GPS du navigateur plus tard */}
       <input
         type="hidden"
         value={latitude}

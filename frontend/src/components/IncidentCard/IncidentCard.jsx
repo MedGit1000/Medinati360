@@ -23,19 +23,25 @@ const IncidentCard = ({ incident, onClick }) => {
     }
   };
 
-  const getStatusClass = (status) => {
-    switch (status) {
-      case "Reçu":
-        return "status-new";
-      case "En cours":
-        return "status-progress";
-      case "Résolu":
-        return "status-resolved";
-      default:
-        return "";
-    }
+  // const getStatusClass = (status) => {
+  //   switch (status) {
+  //     case "Reçu":
+  //       return "status-new";
+  //     case "En cours":
+  //       return "status-progress";
+  //     case "Résolu":
+  //       return "status-resolved";
+  //     default:
+  //       return "";
+  //   }
+  // };
+  const STATUS = {
+    Pending: { cls: "status-pending", Icon: AlertCircle },
+    Approved: { cls: "status-approved", Icon: CheckCircle },
+    Rejected: { cls: "status-rejected", Icon: AlertTriangle },
   };
 
+  const getStatusClass = (status) => STATUS[status]?.cls || "";
   const formatDate = (dateString) => {
     if (!dateString) return "N/A";
     const date = new Date(dateString);

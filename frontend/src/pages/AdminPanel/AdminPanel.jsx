@@ -8,6 +8,7 @@ import {
   Eye,
   RefreshCw,
 } from "lucide-react";
+import apiService from "../../services/apiService";
 import "./AdminPanel.css";
 
 const AdminPanel = () => {
@@ -91,45 +92,22 @@ const AdminPanel = () => {
 
   const handleApprove = async (id) => {
     try {
-      const token = localStorage.getItem("auth_token");
+      await apiService.incidents.approve(id); // <-- USE THE API SERVICE
 
-      // FIX: Ensure proper URL format with / between api and incidents
-      const url = `http://localhost:8000/api/incidents/${id}/approve`;
-      console.log("Approving incident at URL:", url);
+      // Show success message
+      const successDiv = document.createElement("div");
+      successDiv.className = "success-toast";
+      successDiv.textContent = "✓ Incident approuvé avec succès";
+      document.body.appendChild(successDiv);
+      setTimeout(() => successDiv.remove(), 3000);
 
-      const response = await fetch(url, {
-        method: "POST",
-        headers: {
-          Authorization: `Bearer ${token}`,
-          Accept: "application/json",
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({}), // Send empty body for POST request
-      });
-
-      if (response.ok) {
-        const result = await response.json();
-        console.log("Approval successful:", result);
-
-        // Show success message
-        const successDiv = document.createElement("div");
-        successDiv.className = "success-toast";
-        successDiv.textContent = "✓ Incident approuvé avec succès";
-        document.body.appendChild(successDiv);
-        setTimeout(() => successDiv.remove(), 3000);
-
-        // Reload data
-        loadIncidents();
-        loadStats();
-        setSelectedIncident(null);
-      } else {
-        const error = await response.json();
-        console.error("Approval failed:", error);
-        alert(error.message || "Erreur lors de l'approbation");
-      }
+      // Reload data
+      loadIncidents();
+      loadStats();
+      setSelectedIncident(null);
     } catch (error) {
-      console.error("Erreur:", error);
-      alert("Erreur de connexion: " + error.message);
+      console.error("Approval failed:", error);
+      alert(error.message || "Erreur lors de l'approbation");
     }
   };
 
@@ -140,46 +118,23 @@ const AdminPanel = () => {
     }
 
     try {
-      const token = localStorage.getItem("auth_token");
+      await apiService.incidents.reject(id, rejectionReason); // <-- USE THE API SERVICE
 
-      // FIX: Ensure proper URL format with / between api and incidents
-      const url = `http://localhost:8000/api/incidents/${id}/reject`;
-      console.log("Rejecting incident at URL:", url);
+      // Show success message
+      const successDiv = document.createElement("div");
+      successDiv.className = "success-toast";
+      successDiv.textContent = "✓ Incident rejeté";
+      document.body.appendChild(successDiv);
+      setTimeout(() => successDiv.remove(), 3000);
 
-      const response = await fetch(url, {
-        method: "POST",
-        headers: {
-          Authorization: `Bearer ${token}`,
-          Accept: "application/json",
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({ reason: rejectionReason }),
-      });
-
-      if (response.ok) {
-        const result = await response.json();
-        console.log("Rejection successful:", result);
-
-        // Show success message
-        const successDiv = document.createElement("div");
-        successDiv.className = "success-toast";
-        successDiv.textContent = "✓ Incident rejeté";
-        document.body.appendChild(successDiv);
-        setTimeout(() => successDiv.remove(), 3000);
-
-        // Reload data
-        loadIncidents();
-        loadStats();
-        setSelectedIncident(null);
-        setRejectionReason("");
-      } else {
-        const error = await response.json();
-        console.error("Rejection failed:", error);
-        alert(error.message || "Erreur lors du rejet");
-      }
+      // Reload data
+      loadIncidents();
+      loadStats();
+      setSelectedIncident(null);
+      setRejectionReason("");
     } catch (error) {
-      console.error("Erreur:", error);
-      alert("Erreur de connexion: " + error.message);
+      console.error("Rejection failed:", error);
+      alert(error.message || "Erreur lors du rejet");
     }
   };
 

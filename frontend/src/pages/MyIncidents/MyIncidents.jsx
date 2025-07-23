@@ -26,45 +26,82 @@ const MyIncidents = () => {
     }
   }, [user]);
 
+  // const loadMyIncidents = async () => {
+  //   try {
+  //     setLoading(true);
+  //     // Get all incidents and filter by current user
+  //     const allIncidents = await apiService.incidents.getAll();
+  //     const myIncidents = allIncidents.filter(
+  //       (incident) => incident.user_id === user.id
+  //     );
+  //     setIncidents(myIncidents);
+  //   } catch (error) {
+  //     console.error("Erreur lors du chargement des incidents:", error);
+  //   } finally {
+  //     setLoading(false);
+  //   }
+  // };
   const loadMyIncidents = async () => {
     try {
       setLoading(true);
-      // Get all incidents and filter by current user
-      const allIncidents = await apiService.incidents.getAll();
-      const myIncidents = allIncidents.filter(
-        (incident) => incident.user_id === user.id
-      );
+      // Call the new, optimized endpoint
+      const myIncidents = await apiService.incidents.getMyIncidents();
       setIncidents(myIncidents);
     } catch (error) {
-      console.error("Erreur lors du chargement des incidents:", error);
+      console.error("Erreur lors du chargement de vos incidents:", error);
     } finally {
       setLoading(false);
     }
   };
 
-  const getStatusBadge = (incident) => {
-    if (incident.is_approved) {
+  // const getStatusBadge = (incident) => {
+  //   if (incident.is_approved) {
+  //     return (
+  //       <div className="status-badge approved">
+  //         <CheckCircle size={16} />
+  //         <span>Approuvé</span>
+  //       </div>
+  //     );
+  //   } else if (incident.rejection_reason) {
+  //     return (
+  //       <div className="status-badge rejected">
+  //         <XCircle size={16} />
+  //         <span>Rejeté</span>
+  //       </div>
+  //     );
+  //   } else {
+  //     return (
+  //       <div className="status-badge pending">
+  //         <Clock size={16} />
+  //         <span>En attente d'approbation</span>
+  //       </div>
+  //     );
+  //   }
+  // };
+
+  const getStatusBadge = (status) => {
+    if (status === "Approved") {
       return (
         <div className="status-badge approved">
           <CheckCircle size={16} />
           <span>Approuvé</span>
         </div>
       );
-    } else if (incident.rejection_reason) {
+    }
+    if (status === "Rejected") {
       return (
         <div className="status-badge rejected">
           <XCircle size={16} />
           <span>Rejeté</span>
         </div>
       );
-    } else {
-      return (
-        <div className="status-badge pending">
-          <Clock size={16} />
-          <span>En attente d'approbation</span>
-        </div>
-      );
     }
+    return (
+      <div className="status-badge pending">
+        <Clock size={16} />
+        <span>En attente</span>
+      </div>
+    );
   };
 
   const getIncidentStatus = (incident) => {
@@ -79,21 +116,31 @@ const MyIncidents = () => {
     );
   };
 
+  // const filteredIncidents = incidents.filter((incident) => {
+  //   if (filter === "all") return true;
+  //   if (filter === "pending")
+  //     return !incident.is_approved && !incident.rejection_reason;
+  //   if (filter === "approved") return incident.is_approved;
+  //   if (filter === "rejected") return !!incident.rejection_reason;
+  //   return true;
+  // });
   const filteredIncidents = incidents.filter((incident) => {
     if (filter === "all") return true;
-    if (filter === "pending")
-      return !incident.is_approved && !incident.rejection_reason;
-    if (filter === "approved") return incident.is_approved;
-    if (filter === "rejected") return !!incident.rejection_reason;
-    return true;
+    return incident.status.toLowerCase() === filter; // 'pending' | 'approved' | 'rejected'
   });
 
+  // const stats = {
+  //   total: incidents.length,
+  //   pending: incidents.filter((i) => !i.is_approved && !i.rejection_reason)
+  //     .length,
+  //   approved: incidents.filter((i) => i.is_approved).length,
+  //   rejected: incidents.filter((i) => !!i.rejection_reason).length,
+  // };
   const stats = {
     total: incidents.length,
-    pending: incidents.filter((i) => !i.is_approved && !i.rejection_reason)
-      .length,
-    approved: incidents.filter((i) => i.is_approved).length,
-    rejected: incidents.filter((i) => !!i.rejection_reason).length,
+    pending: incidents.filter((i) => i.status === "Pending").length,
+    approved: incidents.filter((i) => i.status === "Approved").length,
+    rejected: incidents.filter((i) => i.status === "Rejected").length,
   };
 
   if (!user) {
