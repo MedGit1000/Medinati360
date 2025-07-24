@@ -3,9 +3,9 @@ This digest is designed to be easily parsed by Large Language Models.
 
 --- SUMMARY ---
 Repository: Medinati360
-Files Analyzed: 117
-Total Text Size: 430.79 KB
-Estimated Tokens (text only): ~125.153
+Files Analyzed: 126
+Total Text Size: 452.77 KB
+Estimated Tokens (text only): ~131.220
 
 --- DIRECTORY STRUCTURE ---
 Medinati360/
@@ -97,6 +97,7 @@ Medinati360/
 │   │           ├── 7885c4e9a680763caab819ca46c1020e.php
 │   │           ├── 83ab575af0d42718c72fb8cdb4ad791a.php
 │   │           ├── 942403f6e1d018dc1d97fb986203dfda.php
+│   │           ├── a4dfe6de035d7711ac9e43f149865875.php
 │   │           ├── bb7c605203362cf8b43f5c7660d2df5f.php
 │   │           ├── bbf105f0901cd2f6162a2004db5c2d7a.php
 │   │           ├── c4095c722371f8be04837f1f27e63ef8.php
@@ -120,7 +121,10 @@ Medinati360/
 └── frontend/
     ├── src/
     │   ├── assets/
-    │   │   └── react.svg
+    │   │   ├── 360_logo.png [binary]
+    │   │   ├── hero-illustration.png [binary]
+    │   │   ├── react.svg
+    │   │   └── smartcity.png [binary]
     │   ├── components/
     │   │   ├── Auth/
     │   │   │   ├── Auth.css
@@ -160,6 +164,9 @@ Medinati360/
     │   │   ├── Incidents/
     │   │   │   ├── Incidents.css
     │   │   │   └── Incidents.jsx
+    │   │   ├── LandingPage/
+    │   │   │   ├── LandingPage.css
+    │   │   │   └── LandingPage.jsx
     │   │   ├── MyIncidents/
     │   │   │   ├── MyIncidents.css
     │   │   │   └── MyIncidents.jsx
@@ -173,8 +180,11 @@ Medinati360/
     │   ├── index.css
     │   └── main.jsx
     ├── eslint.config.js
+    ├── jsconfig.json
     ├── package.json
+    ├── postcss.config.js
     ├── README.md
+    ├── tailwind.config.js
     └── vite.config.js
 
 
@@ -545,6 +555,25 @@ class IncidentController extends Controller
             'incident' => $incident
         ]);
     }
+
+
+    /**
+     * Display a listing of the authenticated user's incidents.
+     */
+    public function myIncidents(Request $request)
+    {
+        try {
+            $incidents = $request->user()->incidents()
+                ->with(['category:id,name', 'approvedBy:id,name']) // Eager load relationships
+                ->latest() // Order by most recent
+                ->get();
+
+            return response()->json($incidents);
+        } catch (\Exception $e) {
+            Log::error('Error in myIncidents: ' . $e->getMessage());
+            return response()->json(['error' => 'Server error'], 500);
+        }
+    }
 }
 
 
@@ -625,13 +654,13 @@ class IsAdmin
      *
      * @param  \Closure(\Illuminate\Http\Request): (\Symfony\Component\HttpFoundation\Response)  $next
      */
+    // In backend/app/Http/Middleware/IsAdmin.php
     public function handle(Request $request, Closure $next): Response
     {
-        if (!$request->user() || !$request->user()->is_admin) {
-            return response()->json(['message' => 'Non autorisé - Accès administrateur requis'], 403);
+        if ($request->user() && in_array($request->user()->role, ['admin', 'superadmin'])) {
+            return $next($request);
         }
-
-        return $next($request);
+        return response()->json(['message' => 'Unauthorized: Admin access required.'], 403);
     }
 }
 
@@ -656,7 +685,10 @@ class IsSuperAdmin
      */
     public function handle(Request $request, Closure $next): Response
     {
-        return $next($request);
+        if ($request->user() && $request->user()->role === 'superadmin') {
+            return $next($request);
+        }
+        return response()->json(['message' => 'Unauthorized: Super Admin access required.'], 403);
     }
 }
 
@@ -3598,6 +3630,7 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::post('/incidents/{id}/approve', [IncidentController::class, 'approve']);
     Route::post('/incidents/{id}/reject',  [IncidentController::class, 'reject']);
     Route::put('/incidents/{id}/status',  [IncidentController::class, 'updateStatus']);
+    Route::get('/my-incidents',           [IncidentController::class, 'myIncidents']);
 
     /* --- User information --- */
     Route::get('/user', fn(Request $request) => response()->json($request->user()));
@@ -4343,6 +4376,17 @@ FILE: backend/storage/framework/views/942403f6e1d018dc1d97fb986203dfda.php
 <?php $__env->startSection('message', __($exception->getMessage() ?: 'Forbidden')); ?>
 
 <?php echo $__env->make('errors::minimal', array_diff_key(get_defined_vars(), ['__data' => 1, '__path' => 1]))->render(); ?><?php /**PATH C:\Users\Lenovo\Downloads\Medinati360\backend\vendor\laravel\framework\src\Illuminate\Foundation\Exceptions/views/403.blade.php ENDPATH**/ ?>
+
+============================================================
+FILE: backend/storage/framework/views/a4dfe6de035d7711ac9e43f149865875.php
+============================================================
+
+
+<?php $__env->startSection('title', __('Not Found')); ?>
+<?php $__env->startSection('code', '404'); ?>
+<?php $__env->startSection('message', __('Not Found')); ?>
+
+<?php echo $__env->make('errors::minimal', array_diff_key(get_defined_vars(), ['__data' => 1, '__path' => 1]))->render(); ?><?php /**PATH C:\Users\Lenovo\Downloads\Medinati360\backend\vendor\laravel\framework\src\Illuminate\Foundation\Exceptions/views/404.blade.php ENDPATH**/ ?>
 
 ============================================================
 FILE: backend/storage/framework/views/bb7c605203362cf8b43f5c7660d2df5f.php
@@ -5528,7 +5572,7 @@ FILE: frontend/src/components/Header/Header.css
     top: 0;
     left: 0;
     right: 0;
-    height: 64px;
+    height: 67px;
     background-color: var(--bg-primary);
     border-bottom: 1px solid var(--border-color);
     box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
@@ -5564,16 +5608,16 @@ FILE: frontend/src/components/Header/Header.css
     color: var(--text-primary);
 }
 
-.header-title {
-    font-size: 20px;
-    font-weight: 600;
-    color: var(--text-primary);
+.header-title img {
+    height: 140px;
+    /* Adjust the height as you see fit */
+    width: auto;
 }
 
 .header-right {
     display: flex;
     align-items: center;
-    gap: 12px;
+    gap: 18px;
 }
 
 .btn-report-header {
@@ -5845,13 +5889,13 @@ import {
   ChevronDown,
 } from "lucide-react";
 import "./Header.css";
+import logoImage from "../../assets/360_logo.png";
 
 const Header = ({
   darkMode,
   setDarkMode,
   sidebarOpen,
   setSidebarOpen,
-  appName,
   onReportClick,
   user,
   onLogout,
@@ -5869,7 +5913,9 @@ const Header = ({
           >
             {sidebarOpen ? <X size={24} /> : <Menu size={24} />}
           </button>
-          <h1 className="header-title">{appName || "Gestion des Incidents"}</h1>
+          <a href="#" className="header-title">
+            <img src={logoImage} alt="Medinati360 Logo" />
+          </a>
         </div>
 
         <div className="header-right">
@@ -7780,63 +7826,52 @@ FILE: frontend/src/components/StatsCard/StatsCard.css
 FILE: frontend/src/components/StatsCard/StatsCard.jsx
 ============================================================
 import React from "react";
-import {
-  AlertCircle,
-  AlertTriangle,
-  Clock,
-  CheckCircle,
-  TrendingUp,
-  TrendingDown,
-  Activity,
-} from "lucide-react";
-import "./StatsCard.css";
+import { AlertCircle, Clock, CheckCircle, Activity } from "lucide-react";
 
-const StatsCard = ({ title, value, type, trend, trendUp }) => {
-  const getIcon = () => {
-    switch (type) {
-      case "total":
-        return <Activity size={24} />;
-      case "new":
-        return <AlertCircle size={24} />;
-      case "progress":
-        return <Clock size={24} />;
-      case "resolved":
-        return <CheckCircle size={24} />;
-      default:
-        return <AlertCircle size={24} />;
-    }
-  };
+// This lookup object makes the dynamic classes cleaner
+const typeStyles = {
+  total: {
+    value: "text-primary",
+    iconBg: "bg-secondary",
+    iconText: "text-foreground",
+    Icon: Activity,
+  },
+  new: {
+    value: "text-blue-500",
+    iconBg: "bg-blue-100 dark:bg-blue-900/50",
+    iconText: "text-blue-500",
+    Icon: AlertCircle,
+  },
+  progress: {
+    value: "text-yellow-500",
+    iconBg: "bg-yellow-100 dark:bg-yellow-900/50",
+    iconText: "text-yellow-500",
+    Icon: Clock,
+  },
+  resolved: {
+    value: "text-green-500",
+    iconBg: "bg-green-100 dark:bg-green-900/50",
+    iconText: "text-green-500",
+    Icon: CheckCircle,
+  },
+};
 
-  const getColorClass = () => {
-    switch (type) {
-      case "new":
-        return "stats-card-new";
-      case "progress":
-        return "stats-card-progress";
-      case "resolved":
-        return "stats-card-resolved";
-      case "total":
-        return "stats-card-primary";
-      default:
-        return "stats-card-primary";
-    }
-  };
+const StatsCard = ({ title, value, type = "total" }) => {
+  const styles = typeStyles[type] || typeStyles.total;
+  const { Icon } = styles;
 
   return (
-    <div className={`stats-card ${getColorClass()}`}>
-      <div className="stats-card-content">
-        <div className="stats-card-info">
-          <p className="stats-card-title">{title}</p>
-          <p className="stats-card-value">{value}</p>
-          {trend && (
-            <div className="stats-card-trend">
-              {trendUp ? <TrendingUp size={16} /> : <TrendingDown size={16} />}
-              <span>{trend}</span>
-              <span className="trend-period">vs mois dernier</span>
-            </div>
-          )}
+    <div className="bg-background border border-border rounded-lg p-6 shadow-sm transition-all hover:shadow-md hover:-translate-y-1">
+      <div className="flex justify-between items-start">
+        <div className="flex-1">
+          <p className="text-sm text-muted-foreground mb-2">{title}</p>
+          <p className={`text-4xl font-bold ${styles.value}`}>{value}</p>
         </div>
-        <div className="stats-card-icon">{getIcon()}</div>
+        <div
+          className={`flex-shrink-0 w-12 h-12 flex items-center justify-center rounded-lg ${styles.iconBg}`}
+        >
+          <Icon className={`w-6 h-6 ${styles.iconText}`} />
+        </div>
       </div>
     </div>
   );
@@ -8292,6 +8327,7 @@ import {
   Eye,
   RefreshCw,
 } from "lucide-react";
+import apiService from "../../services/apiService";
 import "./AdminPanel.css";
 
 const AdminPanel = () => {
@@ -8375,45 +8411,22 @@ const AdminPanel = () => {
 
   const handleApprove = async (id) => {
     try {
-      const token = localStorage.getItem("auth_token");
+      await apiService.incidents.approve(id); // <-- USE THE API SERVICE
 
-      // FIX: Ensure proper URL format with / between api and incidents
-      const url = `http://localhost:8000/api/incidents/${id}/approve`;
-      console.log("Approving incident at URL:", url);
+      // Show success message
+      const successDiv = document.createElement("div");
+      successDiv.className = "success-toast";
+      successDiv.textContent = "✓ Incident approuvé avec succès";
+      document.body.appendChild(successDiv);
+      setTimeout(() => successDiv.remove(), 3000);
 
-      const response = await fetch(url, {
-        method: "POST",
-        headers: {
-          Authorization: `Bearer ${token}`,
-          Accept: "application/json",
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({}), // Send empty body for POST request
-      });
-
-      if (response.ok) {
-        const result = await response.json();
-        console.log("Approval successful:", result);
-
-        // Show success message
-        const successDiv = document.createElement("div");
-        successDiv.className = "success-toast";
-        successDiv.textContent = "✓ Incident approuvé avec succès";
-        document.body.appendChild(successDiv);
-        setTimeout(() => successDiv.remove(), 3000);
-
-        // Reload data
-        loadIncidents();
-        loadStats();
-        setSelectedIncident(null);
-      } else {
-        const error = await response.json();
-        console.error("Approval failed:", error);
-        alert(error.message || "Erreur lors de l'approbation");
-      }
+      // Reload data
+      loadIncidents();
+      loadStats();
+      setSelectedIncident(null);
     } catch (error) {
-      console.error("Erreur:", error);
-      alert("Erreur de connexion: " + error.message);
+      console.error("Approval failed:", error);
+      alert(error.message || "Erreur lors de l'approbation");
     }
   };
 
@@ -8424,46 +8437,23 @@ const AdminPanel = () => {
     }
 
     try {
-      const token = localStorage.getItem("auth_token");
+      await apiService.incidents.reject(id, rejectionReason); // <-- USE THE API SERVICE
 
-      // FIX: Ensure proper URL format with / between api and incidents
-      const url = `http://localhost:8000/api/incidents/${id}/reject`;
-      console.log("Rejecting incident at URL:", url);
+      // Show success message
+      const successDiv = document.createElement("div");
+      successDiv.className = "success-toast";
+      successDiv.textContent = "✓ Incident rejeté";
+      document.body.appendChild(successDiv);
+      setTimeout(() => successDiv.remove(), 3000);
 
-      const response = await fetch(url, {
-        method: "POST",
-        headers: {
-          Authorization: `Bearer ${token}`,
-          Accept: "application/json",
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({ reason: rejectionReason }),
-      });
-
-      if (response.ok) {
-        const result = await response.json();
-        console.log("Rejection successful:", result);
-
-        // Show success message
-        const successDiv = document.createElement("div");
-        successDiv.className = "success-toast";
-        successDiv.textContent = "✓ Incident rejeté";
-        document.body.appendChild(successDiv);
-        setTimeout(() => successDiv.remove(), 3000);
-
-        // Reload data
-        loadIncidents();
-        loadStats();
-        setSelectedIncident(null);
-        setRejectionReason("");
-      } else {
-        const error = await response.json();
-        console.error("Rejection failed:", error);
-        alert(error.message || "Erreur lors du rejet");
-      }
+      // Reload data
+      loadIncidents();
+      loadStats();
+      setSelectedIncident(null);
+      setRejectionReason("");
     } catch (error) {
-      console.error("Erreur:", error);
-      alert("Erreur de connexion: " + error.message);
+      console.error("Rejection failed:", error);
+      alert(error.message || "Erreur lors du rejet");
     }
   };
 
@@ -9931,6 +9921,779 @@ export default Incidents;
 
 
 ============================================================
+FILE: frontend/src/pages/LandingPage/LandingPage.css
+============================================================
+/* === GLOBAL STYLES FOR LANDING PAGE === */
+:root {
+    --default-font: "Noto Sans", sans-serif;
+    --heading-font: "Questrial", sans-serif;
+    --nav-font: "Roboto", sans-serif;
+    --primary-color: #5846f9;
+    --secondary-color: #333;
+    --light-background: #f8f9fa;
+}
+
+.landing-page-wrapper-v2 {
+    font-family: var(--default-font);
+    color: #6c757d;
+}
+
+a {
+    color: var(--primary-color);
+    text-decoration: none;
+    transition: 0.3s;
+}
+
+a:hover {
+    color: #7d71fc;
+    text-decoration: none;
+}
+
+h1,
+h2,
+h3,
+h4,
+h5,
+h6 {
+    font-family: var(--heading-font);
+    color: var(--secondary-color);
+}
+
+/* === HEADER / NAVBAR === */
+.landing-header-v2 {
+    height: 80px;
+    transition: all 0.5s;
+    z-index: 997;
+    background: #fff;
+    box-shadow: 0 2px 15px rgba(0, 0, 0, 0.05);
+    position: sticky;
+    top: 0;
+}
+
+.header-container-v2 {
+    max-width: 1200px;
+    margin: 0 auto;
+    padding: 0 15px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    height: 100%;
+}
+
+.logo h1 {
+    font-size: 28px;
+    font-weight: 700;
+    color: var(--secondary-color);
+}
+
+.logo img {
+    height: 150px;
+    /* Adjust the height as you see fit */
+    /* Adjust the height as you see fit */
+    width: auto;
+}
+
+.navmenu ul {
+    list-style: none;
+    display: flex;
+    gap: 30px;
+    margin: 0;
+}
+
+.navmenu a {
+    font-family: var(--nav-font);
+    font-size: 16px;
+    color: #6c757d;
+    font-weight: 500;
+    padding: 10px 0;
+    border-bottom: 2px solid transparent;
+    transition: 0.3s;
+}
+
+.navmenu a:hover,
+.navmenu .active {
+    color: var(--primary-color);
+    border-bottom-color: var(--primary-color);
+}
+
+.header-social-links {
+    display: flex;
+    gap: 15px;
+}
+
+.header-social-links a {
+    color: #6c757d;
+}
+
+/* === HERO SECTION === */
+.hero {
+    width: 100%;
+    min-height: 80vh;
+    padding: 120px 0;
+    background: #fff;
+}
+
+.hero .content {
+    text-align: left;
+}
+
+.hero h2 {
+    font-size: 48px;
+    font-weight: 700;
+    line-height: 1.2;
+    margin-bottom: 20px;
+}
+
+.hero .lead {
+    font-size: 18px;
+    color: #6c757d;
+    margin-bottom: 30px;
+}
+
+.btn {
+    padding: 12px 30px;
+    border-radius: 50px;
+    font-weight: 500;
+    transition: 0.3s;
+}
+
+.btn-primary {
+    background: var(--primary-color);
+    color: #fff;
+}
+
+.btn-primary:hover {
+    background: #4a39e4;
+}
+
+.btn-outline {
+    border: 2px solid var(--primary-color);
+    color: var(--primary-color);
+}
+
+.btn-outline:hover {
+    background: var(--primary-color);
+    color: #fff;
+}
+
+.cta-buttons {
+    display: flex;
+    gap: 15px;
+    margin-bottom: 40px;
+}
+
+.hero-stats {
+    display: flex;
+    gap: 30px;
+}
+
+.stat-item {
+    display: flex;
+    flex-direction: column;
+}
+
+.stat-number {
+    font-size: 36px;
+    font-weight: 700;
+    color: var(--secondary-color);
+}
+
+.stat-label {
+    font-size: 14px;
+    color: #6c757d;
+}
+
+.hero-image {
+    position: relative;
+}
+
+.hero-image img {
+    border-radius: 20px;
+}
+
+.hero-image .shape-1,
+.hero-image .shape-2 {
+    position: absolute;
+    background: var(--primary-color);
+    border-radius: 50%;
+    opacity: 0.1;
+    z-index: -1;
+}
+
+.hero-image .shape-1 {
+    width: 150px;
+    height: 150px;
+    top: -50px;
+    left: -50px;
+}
+
+.hero-image .shape-2 {
+    width: 100px;
+    height: 100px;
+    bottom: -30px;
+    right: -30px;
+}
+
+/* === SECTION STYLES === */
+.section {
+    padding: 80px 0;
+}
+
+.light-background {
+    background-color: var(--light-background);
+}
+
+.section-title {
+    text-align: center;
+    padding-bottom: 40px;
+}
+
+.section-title h2 {
+    font-size: 36px;
+    font-weight: 700;
+    margin-bottom: 15px;
+}
+
+.section-title p {
+    max-width: 600px;
+    margin: 0 auto;
+}
+
+/* === RESUME / HOW IT WORKS SECTION === */
+.resume-wrapper {
+    border-left: 2px solid var(--primary-color);
+}
+
+.resume-block {
+    padding-left: 30px;
+}
+
+.timeline-item {
+    position: relative;
+    padding-left: 40px;
+    padding-bottom: 40px;
+}
+
+.timeline-dot {
+    position: absolute;
+    left: -11px;
+    top: 5px;
+    width: 20px;
+    height: 20px;
+    border-radius: 50%;
+    background-color: #fff;
+    border: 2px solid var(--primary-color);
+}
+
+.timeline-left .company {
+    font-weight: 600;
+    color: var(--secondary-color);
+}
+
+.timeline-right .position {
+    font-size: 20px;
+    font-weight: 600;
+    margin-bottom: 10px;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+}
+
+.timeline-right .icon {
+    color: var(--primary-color);
+}
+
+/* === SERVICES / FEATURES SECTION === */
+.service-item {
+    padding: 30px;
+    background: #fff;
+    border-radius: 10px;
+    box-shadow: 0 0 30px rgba(0, 0, 0, 0.08);
+    transition: 0.3s;
+    height: 100%;
+}
+
+.service-item:hover {
+    transform: translateY(-5px);
+    box-shadow: 0 5px 30px rgba(0, 0, 0, 0.1);
+}
+
+.service-item .icon {
+    font-size: 36px;
+    color: var(--primary-color);
+    margin-bottom: 20px;
+}
+
+.service-item h3 {
+    font-size: 20px;
+    font-weight: 700;
+    margin-bottom: 15px;
+}
+
+/* === FAQ SECTION === */
+.faq-container .faq-item {
+    position: relative;
+    padding: 20px;
+    margin-bottom: 10px;
+    background: #fff;
+    border-radius: 5px;
+    box-shadow: 0 2px 15px rgba(0, 0, 0, 0.05);
+}
+
+.faq-container .faq-item h3 {
+    font-size: 18px;
+    font-weight: 600;
+    cursor: pointer;
+    padding-right: 40px;
+}
+
+.faq-container .faq-toggle {
+    position: absolute;
+    top: 50%;
+    right: 20px;
+    transform: translateY(-50%);
+    transition: transform 0.3s;
+}
+
+.faq-container .faq-item.active .faq-toggle {
+    transform: translateY(-50%) rotate(90deg);
+}
+
+.faq-content {
+    max-height: 0;
+    overflow: hidden;
+    transition: max-height 0.3s ease-in-out;
+}
+
+.faq-item.active .faq-content {
+    max-height: 200px;
+    /* Adjust as needed */
+    padding-top: 15px;
+}
+
+/* === FOOTER === */
+.footer {
+    background: #fff;
+    padding: 40px 0;
+    box-shadow: 0 -2px 15px rgba(0, 0, 0, 0.05);
+}
+
+.footer .copyright {
+    margin-bottom: 15px;
+}
+
+.footer .social-links a {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 40px;
+    height: 40px;
+    border-radius: 50%;
+    background: var(--light-background);
+    color: var(--secondary-color);
+    margin: 0 5px;
+    transition: 0.3s;
+}
+
+.footer .social-links a:hover {
+    background: var(--primary-color);
+    color: #fff;
+}
+
+/* === ANIMATIONS === */
+.fade-in-section {
+    opacity: 0;
+    transform: translateY(30px);
+    transition: opacity 0.6s ease-out, transform 0.6s ease-out;
+}
+
+.fade-in-section.is-visible {
+    opacity: 1;
+    transform: translateY(0);
+}
+
+/* === BOOTSTRAP GRID HELPERS (Simplified) === */
+.container {
+    width: 100%;
+    max-width: 1200px;
+    padding-right: 15px;
+    padding-left: 15px;
+    margin-right: auto;
+    margin-left: auto;
+}
+
+.row {
+    display: flex;
+    flex-wrap: wrap;
+    margin-right: -15px;
+    margin-left: -15px;
+}
+
+.col-12,
+.col-lg-6,
+.col-md-6 {
+    position: relative;
+    width: 100%;
+    padding-right: 15px;
+    padding-left: 15px;
+}
+
+@media (min-width: 768px) {
+    .col-md-6 {
+        flex: 0 0 50%;
+        max-width: 50%;
+    }
+}
+
+@media (min-width: 992px) {
+    .col-lg-6 {
+        flex: 0 0 50%;
+        max-width: 50%;
+    }
+}
+
+.align-items-center {
+    align-items: center;
+}
+
+.justify-content-center {
+    justify-content: center;
+}
+
+.g-4 {
+    gap: 1.5rem;
+}
+
+.img-fluid {
+    max-width: 100%;
+    height: auto;
+}
+
+============================================================
+FILE: frontend/src/pages/LandingPage/LandingPage.jsx
+============================================================
+import React, { useState, useEffect } from "react";
+import {
+  ArrowRight,
+  Twitter,
+  Facebook,
+  Instagram,
+  Linkedin,
+  CheckCircle,
+  MapPin,
+  Camera,
+  Clock,
+  Shield,
+  BarChart3,
+  Users,
+  ChevronDown,
+} from "lucide-react";
+import "./LandingPage.css";
+import logoImage from "../../assets/360_logo.png";
+import heroIllustration from "../../assets/smartcity.png"; // Make sure you have this image
+
+const FAQItem = ({ question, answer }) => {
+  const [isOpen, setIsOpen] = useState(false);
+  return (
+    <div className={`faq-item ${isOpen ? "active" : ""}`}>
+      <h3 onClick={() => setIsOpen(!isOpen)}>
+        <span className="faq-question-text">{question}</span>
+        <ChevronDown className="faq-toggle" />
+      </h3>
+      <div className="faq-content">
+        <p>{answer}</p>
+      </div>
+    </div>
+  );
+};
+
+const LandingPage = ({ onLoginClick }) => {
+  useEffect(() => {
+    const handleScroll = () => {
+      const sections = document.querySelectorAll(".fade-in-section");
+      sections.forEach((section) => {
+        const rect = section.getBoundingClientRect();
+        if (rect.top < window.innerHeight * 0.8 && rect.bottom > 0) {
+          section.classList.add("is-visible");
+        }
+      });
+    };
+    window.addEventListener("scroll", handleScroll, { passive: true });
+    handleScroll();
+    return () => window.removeEventListener("scroll", handleScroll);
+  }, []);
+
+  return (
+    <div className="landing-page-wrapper-v2">
+      <header id="header" className="landing-header-v2">
+        <div className="header-container-v2">
+          <a href="#" className="logo">
+            <img src={logoImage} alt="Medinati360 Logo" />
+          </a>
+
+          <nav className="navmenu">
+            <ul>
+              <li>
+                <a href="#hero" className="active">
+                  Accueil
+                </a>
+              </li>
+              <li>
+                <a href="#about">Notre Mission</a>
+              </li>
+              <li>
+                <a href="#how-it-works">Processus</a>
+              </li>
+              <li>
+                <a href="#features">Fonctionnalités</a>
+              </li>
+              <li>
+                <a href="#faq">FAQ</a>
+              </li>
+            </ul>
+          </nav>
+          <div className="header-social-links">
+            <a href="#" className="twitter">
+              <Twitter size={18} />
+            </a>
+            <a href="#" className="facebook">
+              <Facebook size={18} />
+            </a>
+            <a href="#" className="instagram">
+              <Instagram size={18} />
+            </a>
+          </div>
+        </div>
+      </header>
+
+      <main className="main">
+        <section id="hero" className="hero section">
+          <div className="container">
+            <div className="row align-items-center content">
+              <div className="col-lg-6">
+                <h2>Améliorez Votre Ville, Un Signalement à la Fois</h2>
+                <p className="lead">
+                  La plateforme citoyenne pour signaler, suivre et résoudre les
+                  incidents urbains. Ensemble, rendons nos villes meilleures.
+                </p>
+                <div className="cta-buttons">
+                  <button onClick={onLoginClick} className="btn btn-primary">
+                    Accéder à la Plateforme
+                  </button>
+                  <a href="#how-it-works" className="btn btn-outline">
+                    Comment ça marche
+                  </a>
+                </div>
+                <div className="hero-stats">
+                  <div className="stat-item">
+                    <span className="stat-number">10,000+</span>
+                    <span className="stat-label">Signalements Traités</span>
+                  </div>
+                  <div className="stat-item">
+                    <span className="stat-number">5+</span>
+                    <span className="stat-label">Villes Actives</span>
+                  </div>
+                  <div className="stat-item">
+                    <span className="stat-number">92%</span>
+                    <span className="stat-label">Taux de Satisfaction</span>
+                  </div>
+                </div>
+              </div>
+              <div className="col-lg-6">
+                <div className="hero-image">
+                  <img
+                    src={heroIllustration}
+                    alt="Illustration d'une ville intelligente"
+                    className="img-fluid"
+                  />
+                  <div className="shape-1"></div>
+                  <div className="shape-2"></div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </section>
+
+        <section id="about" className="about section light-background">
+          <div className="container section-title">
+            <h2>Notre Mission</h2>
+            <p>
+              Créer un pont entre les citoyens et leur administration pour
+              construire des villes plus réactives, transparentes et agréables à
+              vivre.
+            </p>
+          </div>
+        </section>
+
+        <section id="how-it-works" className="resume section">
+          <div className="container section-title">
+            <h2>Le Processus de Résolution</h2>
+            <p>
+              De votre signalement à l'intervention, chaque étape est simple et
+              transparente.
+            </p>
+          </div>
+          <div className="container">
+            <div className="row">
+              <div className="col-12">
+                <div className="resume-wrapper">
+                  <div className="resume-block">
+                    <div className="timeline">
+                      <div className="timeline-item">
+                        <div className="timeline-left">
+                          <h4 className="company">Étape 1</h4>
+                        </div>
+                        <div className="timeline-dot"></div>
+                        <div className="timeline-right">
+                          <h3 className="position">
+                            <Camera className="icon" /> Signalement Facile
+                          </h3>
+                          <p className="description">
+                            Prenez une photo, ajoutez une description et
+                            localisez le problème. Votre signalement est créé en
+                            moins d'une minute.
+                          </p>
+                        </div>
+                      </div>
+                      <div className="timeline-item">
+                        <div className="timeline-left">
+                          <h4 className="company">Étape 2</h4>
+                        </div>
+                        <div className="timeline-dot"></div>
+                        <div className="timeline-right">
+                          <h3 className="position">
+                            <Shield className="icon" /> Validation &
+                            Transmission
+                          </h3>
+                          <p className="description">
+                            Notre équipe de modération vérifie la validité du
+                            signalement avant de le transmettre instantanément
+                            au service municipal compétent.
+                          </p>
+                        </div>
+                      </div>
+                      <div className="timeline-item">
+                        <div className="timeline-left">
+                          <h4 className="company">Étape 3</h4>
+                        </div>
+                        <div className="timeline-dot"></div>
+                        <div className="timeline-right">
+                          <h3 className="position">
+                            <Clock className="icon" /> Suivi en Temps Réel
+                          </h3>
+                          <p className="description">
+                            Suivez l'état d'avancement de votre signalement
+                            (Reçu, En cours, Résolu) et recevez des
+                            notifications à chaque étape clé.
+                          </p>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </section>
+
+        <section id="features" className="services section light-background">
+          <div className="container section-title">
+            <h2>Fonctionnalités Clés</h2>
+          </div>
+          <div className="container">
+            <div className="row g-4">
+              <div className="col-md-6">
+                <div className="service-item">
+                  <MapPin className="icon" />
+                  <h3>Cartographie Interactive</h3>
+                  <p>Visualisez tous les incidents sur une carte dynamique.</p>
+                </div>
+              </div>
+              <div className="col-md-6">
+                <div className="service-item">
+                  <BarChart3 className="icon" />
+                  <h3>Statistiques Publiques</h3>
+                  <p>
+                    Accédez à des données transparentes sur la performance des
+                    services.
+                  </p>
+                </div>
+              </div>
+              <div className="col-md-6">
+                <div className="service-item">
+                  <Users className="icon" />
+                  <h3>Profil Citoyen</h3>
+                  <p>Suivez l'historique et l'impact de vos contributions.</p>
+                </div>
+              </div>
+              <div className="col-md-6">
+                <div className="service-item">
+                  <CheckCircle className="icon" />
+                  <h3>Notifications Automatisées</h3>
+                  <p>Restez informé sans effort à chaque étape du processus.</p>
+                </div>
+              </div>
+            </div>
+          </div>
+        </section>
+
+        <section id="faq" className="faq section">
+          <div className="container section-title">
+            <h2>Questions Fréquemment Posées</h2>
+          </div>
+          <div className="container">
+            <div className="row justify-content-center">
+              <div className="col-lg-10">
+                <div className="faq-container">
+                  <FAQItem
+                    question="Est-ce que l'utilisation de Medinati360 est gratuite ?"
+                    answer="Oui, la plateforme est entièrement gratuite pour tous les citoyens. Notre mission est de faciliter la participation civique sans aucune barrière."
+                  />
+                  <FAQItem
+                    question="Mes données personnelles sont-elles en sécurité ?"
+                    answer="Absolument. Nous respectons les normes les plus strictes en matière de protection des données. Vos informations personnelles ne sont jamais partagées sans votre consentement."
+                  />
+                  <FAQItem
+                    question="Que se passe-t-il après que j'ai signalé un incident ?"
+                    answer="Une fois soumis, votre signalement est examiné par un modérateur, puis transmis au service municipal compétent. Vous pouvez suivre chaque étape de ce processus directement depuis votre compte."
+                  />
+                </div>
+              </div>
+            </div>
+          </div>
+        </section>
+      </main>
+
+      <footer id="footer" className="footer">
+        <div className="container">
+          <div className="copyright text-center">
+            <p>
+              © <span>Copyright</span>{" "}
+              <strong className="px-1 sitename">Medinati360</strong>{" "}
+              <span>Tous droits réservés</span>
+            </p>
+          </div>
+          <div className="social-links d-flex justify-content-center">
+            <a href="">
+              <Twitter size={18} />
+            </a>
+            <a href="">
+              <Facebook size={18} />
+            </a>
+            <a href="">
+              <Instagram size={18} />
+            </a>
+          </div>
+        </div>
+      </footer>
+    </div>
+  );
+};
+
+export default LandingPage;
+
+
+============================================================
 FILE: frontend/src/pages/MyIncidents/MyIncidents.css
 ============================================================
 /* ---------- shared tokens (inherits from IncidentCard) ---------- */
@@ -10416,17 +11179,29 @@ const MyIncidents = () => {
     }
   }, [user]);
 
+  // const loadMyIncidents = async () => {
+  //   try {
+  //     setLoading(true);
+  //     // Get all incidents and filter by current user
+  //     const allIncidents = await apiService.incidents.getAll();
+  //     const myIncidents = allIncidents.filter(
+  //       (incident) => incident.user_id === user.id
+  //     );
+  //     setIncidents(myIncidents);
+  //   } catch (error) {
+  //     console.error("Erreur lors du chargement des incidents:", error);
+  //   } finally {
+  //     setLoading(false);
+  //   }
+  // };
   const loadMyIncidents = async () => {
     try {
       setLoading(true);
-      // Get all incidents and filter by current user
-      const allIncidents = await apiService.incidents.getAll();
-      const myIncidents = allIncidents.filter(
-        (incident) => incident.user_id === user.id
-      );
+      // Call the new, optimized endpoint
+      const myIncidents = await apiService.incidents.getMyIncidents();
       setIncidents(myIncidents);
     } catch (error) {
-      console.error("Erreur lors du chargement des incidents:", error);
+      console.error("Erreur lors du chargement de vos incidents:", error);
     } finally {
       setLoading(false);
     }
@@ -10456,6 +11231,7 @@ const MyIncidents = () => {
   //     );
   //   }
   // };
+
   const getStatusBadge = (status) => {
     if (status === "Approved") {
       return (
@@ -11188,6 +11964,14 @@ const incidents = {
         });
         return handleResponse(res);
     },
+    getMyIncidents: async () => {
+        const res = await fetch(`${API_BASE_URL}/my-incidents`, { headers: getHeaders() });
+        const data = await handleResponse(res);
+        return data.map((i) => ({
+            ...i,
+            is_approved: i.is_approved === true || i.is_approved === 1,
+        }));
+    },
 };
 
 // ------------------------------------------------------------------
@@ -11301,6 +12085,7 @@ import ReportIncident from "./components/ReportIncident/ReportIncident";
 import UserManagement from "./pages/UserManagement/UserManagement";
 import Auth from "./components/Auth/Auth";
 import { AuthProvider, useAuth } from "./hooks/useAuth";
+import LandingPage from "./pages/LandingPage/LandingPage";
 import apiService from "./services/apiService";
 import "./App.css";
 
@@ -11316,6 +12101,14 @@ function AppContent() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
 
+  const handleAuthSuccess = () => {
+    setShowAuthModal(false);
+    loadIncidents();
+    if (user?.role === "user") {
+      setShowReportForm(true);
+    }
+  };
+
   // Charger les incidents au démarrage
   useEffect(() => {
     loadIncidents();
@@ -11330,9 +12123,14 @@ function AppContent() {
   }, [user]);
 
   const loadIncidents = async () => {
+    if (!apiService.auth.isAuthenticated()) {
+      setIncidents([]); // Ensure incidents are empty for logged-out users
+      setLoading(false);
+      return;
+    }
     try {
       setLoading(true);
-      console.log("Loading incidents...");
+      console.log("Loading incidents for authenticated user...");
       const data = await apiService.incidents.getAll();
       console.log("Raw API response:", data);
       setIncidents(data);
@@ -11345,7 +12143,7 @@ function AppContent() {
     }
   };
 
-  const handleReportIncident = async (incidentData) => {
+  const handleReportIncident = async () => {
     try {
       // L'incident est créé via l'API dans ReportIncident
       // On recharge juste la liste
@@ -11363,6 +12161,19 @@ function AppContent() {
       setShowAuthModal(true);
     }
   };
+  if (!isAuthenticated) {
+    return (
+      <div className={`app ${darkMode ? "dark-mode" : ""}`}>
+        <LandingPage onLoginClick={() => setShowAuthModal(true)} />
+        {showAuthModal && (
+          <Auth
+            onClose={() => setShowAuthModal(false)}
+            onSuccess={handleAuthSuccess}
+          />
+        )}
+      </div>
+    );
+  }
 
   // const handleAuthSuccess = () => {
   //   setShowAuthModal(false);
@@ -11373,15 +12184,6 @@ function AppContent() {
   //     setShowReportForm(true);
   //   }
   // };
-  const handleAuthSuccess = () => {
-    setShowAuthModal(false);
-    loadIncidents();
-    // This check was using the old 'is_admin' property.
-    // Now, we check if the user's role is 'user'.
-    if (user?.role === "user") {
-      setShowReportForm(true);
-    }
-  };
 
   const handleLogout = () => {
     logout();
@@ -11429,18 +12231,15 @@ function AppContent() {
         onLogout={handleLogout}
         onLoginClick={() => setShowAuthModal(true)}
       />
-
       <div className="app-container">
         <Sidebar
           sidebarOpen={sidebarOpen}
           activeView={activeView}
           setActiveView={setActiveView}
           incidentStats={incidentStats}
-          // isAdmin={user?.is_admin === true}
           userRole={user?.role}
           isAuthenticated={isAuthenticated}
         />
-
         <main className={`main-content ${sidebarOpen ? "sidebar-open" : ""}`}>
           {activeView === "home" && (
             <Home
@@ -11518,13 +12317,6 @@ function AppContent() {
           onSuccess={handleReportIncident}
         />
       )}
-
-      {showAuthModal && (
-        <Auth
-          onClose={() => setShowAuthModal(false)}
-          onSuccess={handleAuthSuccess}
-        />
-      )}
     </div>
   );
 }
@@ -11544,124 +12336,81 @@ export default App;
 ============================================================
 FILE: frontend/src/index.css
 ============================================================
-/* Reset CSS et styles de base */
-@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap');
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
 
-/* Reset */
-html {
-  box-sizing: border-box;
-  font-size: 16px;
+@layer base {
+  :root {
+    --background: 0 0% 100%;
+    --foreground: 20 14.3% 4.1%;
+    --muted: 60 4.8% 95.9%;
+    --muted-foreground: 25 5.3% 44.7%;
+    --primary: 24 9.8% 10%;
+    --primary-foreground: 60 9.1% 97.8%;
+    --secondary: 60 4.8% 95.9%;
+    --secondary-foreground: 24 9.8% 10%;
+    --destructive: 0 84.2% 60.2%;
+    --border: 20 5.9% 90%;
+    --input: 20 5.9% 90%;
+    --ring: 20 14.3% 4.1%;
+    --card: 0 0% 100%;
+    --card-foreground: 20 14.3% 4.1%;
+    --popover: 0 0% 100%;
+    --popover-foreground: 20 14.3% 4.1%;
+    --accent: 60 4.8% 95.9%;
+    --accent-foreground: 24 9.8% 10%;
+    --destructive-foreground: 60 9.1% 97.8%;
+    --chart-1: 12 76% 61%;
+    --chart-2: 173 58% 39%;
+    --chart-3: 197 37% 24%;
+    --chart-4: 43 74% 66%;
+    --chart-5: 27 87% 67%;
+    --radius: 0.5rem;
+    --color-purple-primary: #6d28d9;
+    --color-purple-secondary: #ede9fe;
+    --color-purple-text: #5b21b6;
+  }
 }
 
-*,
-*:before,
-*:after {
-  box-sizing: inherit;
+.dark {
+  --background: 20 14.3% 4.1%;
+  --foreground: 60 9.1% 97.8%;
+  --muted: 12 6.5% 15.1%;
+  --muted-foreground: 24 5.4% 63.9%;
+  --primary: 60 9.1% 97.8%;
+  --primary-foreground: 24 9.8% 10%;
+  --secondary: 12 6.5% 15.1%;
+  --secondary-foreground: 60 9.1% 97.8%;
+  --destructive: 0 62.8% 30.6%;
+  --border: 12 6.5% 15.1%;
+  --input: 12 6.5% 15.1%;
+  --ring: 24 5.7% 82.9%;
+  --card: 20 14.3% 4.1%;
+  --card-foreground: 60 9.1% 97.8%;
+  --popover: 20 14.3% 4.1%;
+  --popover-foreground: 60 9.1% 97.8%;
+  --accent: 12 6.5% 15.1%;
+  --accent-foreground: 60 9.1% 97.8%;
+  --destructive-foreground: 60 9.1% 97.8%;
+  --chart-1: 220 70% 50%;
+  --chart-2: 160 60% 45%;
+  --chart-3: 30 80% 55%;
+  --chart-4: 280 65% 60%;
+  --chart-5: 340 75% 55%;
 }
 
-body,
-h1,
-h2,
-h3,
-h4,
-h5,
-h6,
-p,
-ol,
-ul {
-  margin: 0;
-  padding: 0;
-  font-weight: normal;
-}
 
-body {
-  font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', 'Oxygen',
-    'Ubuntu', 'Cantarell', 'Fira Sans', 'Droid Sans', 'Helvetica Neue',
-    sans-serif;
-  -webkit-font-smoothing: antialiased;
-  -moz-osx-font-smoothing: grayscale;
-  line-height: 1.5;
-}
 
-/* Remove default button styles */
-button {
-  background: none;
-  border: none;
-  padding: 0;
-  font-family: inherit;
-  cursor: pointer;
-  outline: none;
-}
 
-/* Remove default input styles */
-input,
-textarea,
-select {
-  font-family: inherit;
-  font-size: inherit;
-  line-height: inherit;
-  margin: 0;
-}
+@layer base {
+  * {
+    @apply border-border;
+  }
 
-/* Remove default list styles */
-ol,
-ul {
-  list-style: none;
-}
-
-/* Remove default anchor styles */
-a {
-  text-decoration: none;
-  color: inherit;
-}
-
-/* Smooth scrolling */
-html {
-  scroll-behavior: smooth;
-}
-
-/* Focus styles */
-*:focus-visible {
-  outline: 2px solid #3b82f6;
-  outline-offset: 2px;
-}
-
-/* Selection styles */
-::selection {
-  background-color: #3b82f6;
-  color: white;
-}
-
-/* Scrollbar styles */
-::-webkit-scrollbar {
-  width: 12px;
-  height: 12px;
-}
-
-::-webkit-scrollbar-track {
-  background: #f1f1f1;
-}
-
-::-webkit-scrollbar-thumb {
-  background: #888;
-  border-radius: 6px;
-}
-
-::-webkit-scrollbar-thumb:hover {
-  background: #555;
-}
-
-/* Dark mode scrollbar */
-.dark-mode ::-webkit-scrollbar-track {
-  background: #1f2937;
-}
-
-.dark-mode ::-webkit-scrollbar-thumb {
-  background: #4b5563;
-}
-
-.dark-mode ::-webkit-scrollbar-thumb:hover {
-  background: #6b7280;
+  body {
+    @apply bg-background text-foreground;
+  }
 }
 
 ============================================================
@@ -11716,6 +12465,23 @@ export default defineConfig([
 
 
 ============================================================
+FILE: frontend/jsconfig.json
+============================================================
+{
+  "compilerOptions": {
+    "baseUrl": ".",
+    "paths": {
+      "@/*": [
+        "./src/*"
+      ]
+    }
+  },
+  "exclude": [
+    "node_modules"
+  ]
+}
+
+============================================================
 FILE: frontend/package.json
 ============================================================
 {
@@ -11730,23 +12496,46 @@ FILE: frontend/package.json
     "preview": "vite preview"
   },
   "dependencies": {
+    "@radix-ui/react-dialog": "^1.1.14",
+    "@radix-ui/react-slot": "^1.2.3",
     "axios": "^1.10.0",
+    "class-variance-authority": "^0.7.1",
+    "clsx": "^2.1.1",
+    "leaflet": "^1.9.4",
     "lucide-react": "^0.525.0",
     "react": "^19.1.0",
-    "react-dom": "^19.1.0"
+    "react-dom": "^19.1.0",
+    "react-leaflet": "^5.0.0",
+    "tailwind-merge": "^3.3.1",
+    "tailwindcss-animate": "^1.0.7"
   },
   "devDependencies": {
     "@eslint/js": "^9.29.0",
     "@rollup/rollup-win32-x64-msvc": "^4.44.1",
+    "@tailwindcss/cli": "^4.1.11",
     "@types/react": "^19.1.8",
     "@types/react-dom": "^19.1.6",
     "@vitejs/plugin-react": "^4.5.2",
+    "autoprefixer": "^10.4.21",
     "eslint": "^9.29.0",
     "eslint-plugin-react-hooks": "^5.2.0",
     "eslint-plugin-react-refresh": "^0.4.20",
     "globals": "^16.2.0",
+    "postcss": "^8.5.6",
+    "tailwindcss": "^3.4.17",
     "vite": "^7.0.0"
   }
+}
+
+
+============================================================
+FILE: frontend/postcss.config.js
+============================================================
+export default {
+  plugins: {
+    tailwindcss: {},
+    autoprefixer: {},
+  },
 }
 
 
@@ -11768,6 +12557,48 @@ If you are developing a production application, we recommend using TypeScript wi
 
 
 ============================================================
+FILE: frontend/tailwind.config.js
+============================================================
+/** @type {import('tailwindcss').Config} */
+export default {
+  darkMode: 'class', // We'll keep dark mode enabled
+  content: [
+    "./index.html",
+    "./src/**/*.{js,ts,jsx,tsx}",
+  ],
+  theme: {
+    extend: {
+      colors: {
+        border: 'hsl(var(--border))',
+        background: 'hsl(var(--background))',
+        foreground: 'hsl(var(--foreground))',
+        primary: {
+          DEFAULT: 'hsl(var(--primary))',
+          foreground: 'hsl(var(--primary-foreground))',
+        },
+        secondary: {
+          DEFAULT: 'hsl(var(--secondary))',
+          foreground: 'hsl(var(--secondary-foreground))',
+        },
+        muted: {
+          DEFAULT: 'hsl(var(--muted))',
+          foreground: 'hsl(var(--muted-foreground))',
+        },
+      },
+      borderRadius: {
+        lg: `0.5rem`,
+        md: `calc(0.5rem - 2px)`,
+        sm: `calc(0.5rem - 4px)`,
+      },
+      fontFamily: {
+        sans: ['Inter', 'sans-serif'],
+      },
+    },
+  },
+  plugins: [],
+}
+
+============================================================
 FILE: frontend/vite.config.js
 ============================================================
 import { defineConfig } from 'vite'
@@ -11776,12 +12607,6 @@ import react from '@vitejs/plugin-react'
 // https://vite.dev/config/
 export default defineConfig({
   plugins: [react()],
-  server: { // <-- AJOUTEZ CE BLOC
-    proxy: {
-      '/api': {
-        target: 'http://127.0.0.1:8000',
-        changeOrigin: true,
-      },
-    }
-  }
+  // The proxy block might be here, that's fine to keep.
+  // Just make sure the 'resolve' block is removed.
 })

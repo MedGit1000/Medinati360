@@ -16,7 +16,7 @@ import {
 } from "lucide-react";
 import "./LandingPage.css";
 import logoImage from "../../assets/360_logo.png";
-import heroIllustration from "../../assets/hero-illustration.png"; // Make sure you have this image
+import heroIllustration from "../../assets/smartcity.png"; // Make sure you have this image
 
 const FAQItem = ({ question, answer }) => {
   const [isOpen, setIsOpen] = useState(false);

@@ -175,6 +175,35 @@ const incidents = {
         });
         return handleResponse(res);
     },
+    getAddressFromCoordinates: async ({ lat, lng }) => {
+        try {
+            const url = `https://nominatim.openstreetmap.org/reverse?format=json&lat=${lat}&lon=${lng}`;
+
+            const response = await fetch(url, {
+                headers: {
+                    'Accept': 'application/json',
+                    'User-Agent': 'Medinati360 Incident Reporting App' // Nominatim requires a User-Agent
+                }
+            });
+
+            if (!response.ok) {
+                throw new Error('Failed to fetch address from Nominatim');
+            }
+
+            const data = await response.json();
+
+            // The full address is in the 'display_name' property
+            return data.display_name || 'Adresse introuvable';
+
+        } catch (error) {
+            console.error("Error in reverse geocoding:", error);
+            return 'Impossible de déterminer l\'adresse';
+        }
+    },
+    getCategories: async () => {
+        const res = await fetch(`${API_BASE_URL}/categories`, { headers: getHeaders() });
+        return handleResponse(res);
+    },
     getMyIncidents: async () => {
         const res = await fetch(`${API_BASE_URL}/my-incidents`, { headers: getHeaders() });
         const data = await handleResponse(res);
@@ -183,6 +212,7 @@ const incidents = {
             is_approved: i.is_approved === true || i.is_approved === 1,
         }));
     },
+
 };
 
 // ------------------------------------------------------------------

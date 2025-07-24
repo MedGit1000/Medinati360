@@ -2,83 +2,48 @@ import React from "react";
 import {
   AlertCircle,
   BarChart3,
-  Clock,
-  Users,
-  TrendingUp,
+  Map,
+  FileText,
   ArrowRight,
   Shield,
-  Zap,
-  Activity,
+  CheckCircle,
+  Clock,
+  Users,
 } from "lucide-react";
+import { useAuth } from "../../hooks/useAuth";
 import "./Home.css";
 
-const Home = ({ setActiveView, incidents }) => {
-  // Calculer les statistiques avec les bonnes valeurs de statut
+// A small, reusable component for the stat cards
+const StatCard = ({ value, label, icon, colorClass }) => (
+  <div className="home-stat-card">
+    <div className={`stat-icon-wrapper ${colorClass}`}>{icon}</div>
+    <div className="stat-text">
+      <p className="stat-value">{value}</p>
+      <p className="stat-label">{label}</p>
+    </div>
+  </div>
+);
+
+const Home = ({ setActiveView, incidents, onReportClick }) => {
+  const { user } = useAuth();
+
+  // Calculate statistics from the incidents prop
   const stats = {
     total: incidents.length,
-    received: incidents.filter((i) => i.status === "Reçu").length,
-    inProgress: incidents.filter((i) => i.status === "En cours").length,
+    pending: incidents.filter((i) => !i.is_approved && !i.rejection_reason)
+      .length,
     resolved: incidents.filter((i) => i.status === "Résolu").length,
-    resolvedToday: incidents.filter((i) => {
-      const today = new Date().toDateString();
-      return (
-        i.status === "Résolu" && new Date(i.created_at).toDateString() === today
-      );
-    }).length,
+    inProgress: incidents.filter((i) => i.status === "En cours").length,
   };
 
-  const features = [
-    {
-      icon: <Shield className="feature-icon" />,
-      title: "Surveillance 24/7",
-      description:
-        "Monitoring continu de vos systèmes avec alertes en temps réel",
-    },
-    {
-      icon: <Zap className="feature-icon" />,
-      title: "Réponse Rapide",
-      description: "Temps de réponse moyen de moins de 5 minutes",
-    },
-    {
-      icon: <Activity className="feature-icon" />,
-      title: "Analyses Détaillées",
-      description:
-        "Tableaux de bord et rapports pour optimiser vos performances",
-    },
-  ];
+  // Format the current date for the header
+  const currentDate = new Date().toLocaleDateString("fr-FR", {
+    weekday: "long",
+    year: "numeric",
+    month: "long",
+    day: "numeric",
+  });
 
-  const quickActions = [
-    {
-      title: "Créer un incident",
-      description: "Signaler un nouveau problème",
-      icon: <AlertCircle />,
-      color: "action-red",
-      action: () => setActiveView("incidents"),
-    },
-    {
-      title: "Voir le tableau de bord",
-      description: "Analyser les performances",
-      icon: <BarChart3 />,
-      color: "action-blue",
-      action: () => setActiveView("dashboard"),
-    },
-    {
-      title: "Incidents en cours",
-      description: `${stats.inProgress} incidents actifs`,
-      icon: <Clock />,
-      color: "action-yellow",
-      action: () => setActiveView("incidents"),
-    },
-    {
-      title: "Équipe",
-      description: "Gérer les utilisateurs",
-      icon: <Users />,
-      color: "action-green",
-      action: () => setActiveView("users"),
-    },
-  ];
-
-  // Fonction pour obtenir la classe CSS du statut
   const getStatusClass = (status) => {
     switch (status) {
       case "Reçu":
@@ -93,47 +58,31 @@ const Home = ({ setActiveView, incidents }) => {
   };
 
   return (
-    <div className="home-page">
-      {/* Hero Section */}
-      <section className="hero-section">
-        <div className="hero-content">
-          <h1 className="hero-title">
-            Bienvenue dans votre
-            <span className="hero-highlight">
-              {" "}
-              Centre de Gestion des Incidents
-            </span>
-          </h1>
+    <div className="home-page-v2">
+      {/* === HERO SECTION === */}
+      <section className="home-hero">
+        <div className="hero-text">
+          <p className="hero-date">{currentDate}</p>
+          <h1 className="hero-title">Bonjour, {user?.name || "Citoyen"}!</h1>
           <p className="hero-subtitle">
-            Surveillez, gérez et résolvez les incidents de votre infrastructure
-            en temps réel
+            Ensemble, améliorons notre communauté. Que souhaitez-vous faire
+            aujourd'hui ?
           </p>
+          <div className="hero-cta-buttons">
+            <button className="btn-primary-solid" onClick={onReportClick}>
+              <AlertCircle size={20} />
+              Signaler un Incident
+            </button>
 
-          <div className="hero-stats">
-            <div className="hero-stat">
-              <div className="hero-stat-value">{stats.total}</div>
-              <div className="hero-stat-label">Incidents totaux</div>
-            </div>
-            <div className="hero-stat">
-              <div className="hero-stat-value">{stats.received}</div>
-              <div className="hero-stat-label">Nouveaux</div>
-            </div>
-            <div className="hero-stat">
-              <div className="hero-stat-value">{stats.resolvedToday}</div>
-              <div className="hero-stat-label">Résolus aujourd'hui</div>
-            </div>
-            <div className="hero-stat">
-              <div className="hero-stat-value">
-                {stats.total > 0
-                  ? Math.round((stats.resolved / stats.total) * 100)
-                  : 0}
-                %
-              </div>
-              <div className="hero-stat-label">Taux de résolution</div>
-            </div>
+            <button
+              className="btn-secondary-outline"
+              onClick={() => setActiveView("map")}
+            >
+              <Map size={20} />
+              Voir la Carte
+            </button>
           </div>
         </div>
-
         <div className="hero-visual">
           <div className="hero-animation">
             <div className="pulse-circle pulse-1"></div>
@@ -146,74 +95,124 @@ const Home = ({ setActiveView, incidents }) => {
         </div>
       </section>
 
-      {/* Quick Actions */}
-      <section className="quick-actions-section">
-        <h2 className="section-title">Actions rapides</h2>
-        <div className="quick-actions-grid">
-          {quickActions.map((action, index) => (
+      {/* === STATS GRID === */}
+      <section className="home-stats-grid">
+        <StatCard
+          value={stats.total}
+          label="Signalements Totaux"
+          icon={<BarChart3 size={24} />}
+          colorClass="bg-blue"
+        />
+        <StatCard
+          value={stats.pending}
+          label="En Attente"
+          icon={<Clock size={24} />}
+          colorClass="bg-yellow"
+        />
+        <StatCard
+          value={stats.inProgress}
+          label="En Cours"
+          icon={<Users size={24} />}
+          colorClass="bg-orange"
+        />
+        <StatCard
+          value={stats.resolved}
+          label="Résolus"
+          icon={<CheckCircle size={24} />}
+          colorClass="bg-green"
+        />
+      </section>
+
+      {/* === QUICK ACTIONS & RECENT ACTIVITY === */}
+      <section className="home-main-content">
+        <div className="quick-actions-container">
+          <h2 className="section-title">Accès Rapide</h2>
+          <div className="actions-list">
             <button
-              key={index}
-              className={`quick-action-card ${action.color}`}
-              onClick={action.action}
+              className="action-item"
+              onClick={() => setActiveView("my-incidents")}
             >
-              <div className="quick-action-icon">{action.icon}</div>
-              <h3 className="quick-action-title">{action.title}</h3>
-              <p className="quick-action-description">{action.description}</p>
-              <ArrowRight className="quick-action-arrow" size={20} />
+              <div className="action-icon-wrapper">
+                <FileText size={20} />
+              </div>
+              <div className="action-text">
+                <p className="action-title">Mes Signalements</p>
+                <p className="action-description">
+                  Voir l'historique de vos contributions
+                </p>
+              </div>
+              <ArrowRight className="action-arrow" size={20} />
             </button>
-          ))}
-        </div>
-      </section>
-
-      {/* Features */}
-      <section className="features-section">
-        <h2 className="section-title">Pourquoi choisir notre plateforme ?</h2>
-        <div className="features-grid">
-          {features.map((feature, index) => (
-            <div key={index} className="feature-card">
-              <div className="feature-icon-wrapper">{feature.icon}</div>
-              <h3 className="feature-title">{feature.title}</h3>
-              <p className="feature-description">{feature.description}</p>
-            </div>
-          ))}
-        </div>
-      </section>
-
-      {/* Recent Activity */}
-      <section className="activity-section">
-        <h2 className="section-title">Activité récente</h2>
-        <div className="activity-list">
-          {incidents.slice(0, 5).map((incident) => (
-            <div key={incident.id} className="activity-item">
-              <div className="activity-time">
-                {incident.created_at
-                  ? new Date(incident.created_at).toLocaleTimeString("fr-FR", {
-                      hour: "2-digit",
-                      minute: "2-digit",
-                    })
-                  : "N/A"}
+            <button
+              className="action-item"
+              onClick={() => setActiveView("dashboard")}
+            >
+              <div className="action-icon-wrapper">
+                <BarChart3 size={20} />
               </div>
-              <div className="activity-content">
-                <div className="activity-title">{incident.title}</div>
-                <div className="activity-meta">
-                  {incident.user?.name
-                    ? `Créé par ${incident.user.name}`
-                    : "Anonyme"}{" "}
-                  • {incident.category?.name || "Sans catégorie"}
+              <div className="action-text">
+                <p className="action-title">Tableau de Bord</p>
+                <p className="action-description">
+                  Analyser les statistiques globales
+                </p>
+              </div>
+              <ArrowRight className="action-arrow" size={20} />
+            </button>
+            <button
+              className="action-item"
+              onClick={() => setActiveView("incidents")}
+            >
+              <div className="action-icon-wrapper">
+                <AlertCircle size={20} />
+              </div>
+              <div className="action-text">
+                <p className="action-title">Tous les Incidents</p>
+                <p className="action-description">
+                  Explorer les signalements publics
+                </p>
+              </div>
+              <ArrowRight className="action-arrow" size={20} />
+            </button>
+          </div>
+        </div>
+        <div className="recent-activity-container">
+          <h2 className="section-title">Activité Récente</h2>
+          <div className="activity-list">
+            {incidents.length > 0 ? (
+              incidents.slice(0, 4).map((incident) => (
+                <div key={incident.id} className="activity-item">
+                  <div
+                    className={`activity-icon-wrapper ${getStatusClass(
+                      incident.status
+                    )}`}
+                  >
+                    {incident.status === "Résolu" ? (
+                      <CheckCircle size={20} />
+                    ) : (
+                      <AlertCircle size={20} />
+                    )}
+                  </div>
+                  <div className="activity-details">
+                    <p className="activity-title">{incident.title}</p>
+                    <p className="activity-meta">
+                      Par {incident.user?.name || "Anonyme"} •{" "}
+                      {incident.category?.name}
+                    </p>
+                  </div>
+                  <p className="activity-time">
+                    {new Date(incident.created_at).toLocaleDateString("fr-FR", {
+                      day: "2-digit",
+                      month: "short",
+                    })}
+                  </p>
                 </div>
+              ))
+            ) : (
+              <div className="no-activity-message">
+                <p>Aucune activité récente à afficher.</p>
               </div>
-              <div
-                className={`activity-status ${getStatusClass(incident.status)}`}
-              >
-                {incident.status}
-              </div>
-            </div>
-          ))}
-          {incidents.length === 0 && (
-            <div className="no-activity">
-              <p>Aucun incident récent</p>
-            </div>
-          )}
+            )}
+          </div>
         </div>
       </section>
     </div>

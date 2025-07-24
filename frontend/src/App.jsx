@@ -11,72 +11,60 @@ import UserManagement from "./pages/UserManagement/UserManagement";
 import Auth from "./components/Auth/Auth";
 import { AuthProvider, useAuth } from "./hooks/useAuth";
 import LandingPage from "./pages/LandingPage/LandingPage";
+import IncidentMap from "./pages/Map/IncidentMap";
+import IncidentDetail from "./components/IncidentDetail/IncidentDetail";
 import apiService from "./services/apiService";
 import "./App.css";
 
-// Composant principal qui utilise le contexte d'authentification
+// This is the main component that renders when a user is logged in.
 function AppContent() {
   const { user, logout, isAuthenticated, loading: authLoading } = useAuth();
+
+  // --- STATE MANAGEMENT ---
   const [darkMode, setDarkMode] = useState(false);
   const [sidebarOpen, setSidebarOpen] = useState(true);
   const [activeView, setActiveView] = useState("home");
-  const [showReportForm, setShowReportForm] = useState(false);
-  const [showAuthModal, setShowAuthModal] = useState(false);
   const [incidents, setIncidents] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
 
-  const handleAuthSuccess = () => {
-    setShowAuthModal(false);
-    loadIncidents();
-    if (user?.role === "user") {
-      setShowReportForm(true);
-    }
-  };
+  // Modal States
+  const [showReportForm, setShowReportForm] = useState(false);
+  const [showAuthModal, setShowAuthModal] = useState(false);
+  const [selectedIncident, setSelectedIncident] = useState(null);
 
-  // Charger les incidents au démarrage
-  useEffect(() => {
-    loadIncidents();
-  }, []);
-
-  // Recharger les incidents quand l'utilisateur change
-  useEffect(() => {
-    if (user !== undefined) {
-      // user is loaded (either null or object)
-      loadIncidents();
-    }
-  }, [user]);
-
+  // --- DATA FETCHING ---
   const loadIncidents = async () => {
     if (!apiService.auth.isAuthenticated()) {
-      setIncidents([]); // Ensure incidents are empty for logged-out users
+      setIncidents([]);
       setLoading(false);
       return;
     }
     try {
       setLoading(true);
-      console.log("Loading incidents for authenticated user...");
       const data = await apiService.incidents.getAll();
-      console.log("Raw API response:", data);
       setIncidents(data);
-      console.log("Incidents set in state:", data.length);
     } catch (err) {
-      setError("Erreur lors du chargement des incidents");
+      setError("Erreur lors du chargement des incidents.");
       console.error("Erreur chargement incidents:", err);
     } finally {
       setLoading(false);
     }
   };
 
-  const handleReportIncident = async () => {
-    try {
-      // L'incident est créé via l'API dans ReportIncident
-      // On recharge juste la liste
-      await loadIncidents();
-      setShowReportForm(false);
-    } catch (err) {
-      console.error("Erreur création incident:", err);
-    }
+  // Load incidents on initial mount and when the user logs in/out
+  useEffect(() => {
+    loadIncidents();
+  }, [isAuthenticated]);
+
+  // --- EVENT HANDLERS ---
+  const handleAuthSuccess = () => {
+    setShowAuthModal(false);
+  };
+
+  const handleReportSuccess = () => {
+    setShowReportForm(false);
+    loadIncidents(); // Reload incidents to show the new one
   };
 
   const handleReportClick = () => {
@@ -86,6 +74,36 @@ function AppContent() {
       setShowAuthModal(true);
     }
   };
+
+  const handleLogout = () => {
+    logout();
+    setActiveView("home"); // Go to landing page after logout
+  };
+
+  const handleViewDetails = (incident) => {
+    setSelectedIncident(incident);
+  };
+
+  // --- DERIVED STATE (STATS) ---
+  const incidentStats = {
+    total: incidents.length,
+    pending: incidents.filter((i) => !i.is_approved && !i.rejection_reason)
+      .length,
+  };
+
+  // --- RENDER LOGIC ---
+
+  // Loading screen while checking authentication
+  if (authLoading) {
+    return (
+      <div className="loading-screen">
+        <div className="loader"></div>
+        <p>Chargement...</p>
+      </div>
+    );
+  }
+
+  // Show Landing Page if user is not authenticated
   if (!isAuthenticated) {
     return (
       <div className={`app ${darkMode ? "dark-mode" : ""}`}>
@@ -100,48 +118,85 @@ function AppContent() {
     );
   }
 
-  // const handleAuthSuccess = () => {
-  //   setShowAuthModal(false);
-  //   // Recharger les incidents après connexion
-  //   loadIncidents();
-  //   // Ouvrir le formulaire de signalement après connexion réussie si nécessaire
-  //   if (!user?.is_admin) {
-  //     setShowReportForm(true);
-  //   }
-  // };
-
-  const handleLogout = () => {
-    logout();
-    setActiveView("home");
-    // Recharger les incidents (pour ne montrer que les approuvés)
-    loadIncidents();
+  // This function ensures only ONE view is rendered at a time.
+  const renderActiveView = () => {
+    switch (activeView) {
+      case "home":
+        return (
+          <Home
+            incidents={incidents}
+            setActiveView={setActiveView}
+            onReportClick={handleReportClick}
+          />
+        );
+      case "dashboard":
+        return <Dashboard incidents={incidents} />;
+      case "incidents":
+        return (
+          <Incidents
+            incidents={incidents}
+            onViewDetails={handleViewDetails}
+            loading={loading}
+            error={error}
+          />
+        );
+      case "my-incidents":
+        return <MyIncidents onViewDetails={handleViewDetails} />;
+      case "admin":
+        if (user?.role === "admin" || user?.role === "superadmin")
+          return <AdminPanel />;
+        return (
+          <Home
+            incidents={incidents}
+            setActiveView={setActiveView}
+            onReportClick={handleReportClick}
+          />
+        );
+      case "user-management":
+        if (user?.role === "superadmin") return <UserManagement />;
+        return (
+          <Home
+            incidents={incidents}
+            setActiveView={setActiveView}
+            onReportClick={handleReportClick}
+          />
+        );
+      case "map":
+        return <IncidentMap incidents={incidents} />;
+      case "profile":
+        return (
+          <div className="profile-page">
+            <h2>Mon Profil</h2>
+            <div className="profile-card">
+              <p>
+                <strong>Nom:</strong> {user?.name}
+              </p>
+              <p>
+                <strong>Email:</strong> {user?.email}
+              </p>
+              <p>
+                <strong>Rôle:</strong>{" "}
+                <span style={{ textTransform: "capitalize" }}>
+                  {user?.role}
+                </span>
+              </p>
+              <p>
+                <strong>Membre depuis:</strong>{" "}
+                {new Date(user?.created_at).toLocaleDateString("fr-FR")}
+              </p>
+            </div>
+          </div>
+        );
+      default:
+        return (
+          <Home
+            incidents={incidents}
+            setActiveView={setActiveView}
+            onReportClick={handleReportClick}
+          />
+        );
+    }
   };
-
-  // Calculer les statistiques
-  const incidentStats = {
-    new: incidents.filter((i) => i.status === "Reçu").length,
-    inProgress: incidents.filter(
-      (i) => i.status === "En cours" || i.status === "Assigné"
-    ).length,
-    total: incidents.length,
-    // Stats supplémentaires pour admin
-    // pending: user?.is_admin
-    //   ? incidents.filter((i) => !i.is_approved && !i.rejection_reason).length
-    //   : 0,
-    pending:
-      user?.role === "admin" || user?.role === "superadmin"
-        ? incidents.filter((i) => !i.is_approved && !i.rejection_reason).length
-        : 0,
-  };
-
-  if (authLoading) {
-    return (
-      <div className="loading-screen">
-        <div className="loader"></div>
-        <p>Chargement...</p>
-      </div>
-    );
-  }
 
   return (
     <div className={`app ${darkMode ? "dark-mode" : ""}`}>
@@ -150,11 +205,9 @@ function AppContent() {
         setDarkMode={setDarkMode}
         sidebarOpen={sidebarOpen}
         setSidebarOpen={setSidebarOpen}
-        appName="Medinati360"
         onReportClick={handleReportClick}
         user={user}
         onLogout={handleLogout}
-        onLoginClick={() => setShowAuthModal(true)}
       />
       <div className="app-container">
         <Sidebar
@@ -166,87 +219,28 @@ function AppContent() {
           isAuthenticated={isAuthenticated}
         />
         <main className={`main-content ${sidebarOpen ? "sidebar-open" : ""}`}>
-          {activeView === "home" && (
-            <Home
-              incidents={incidents}
-              setActiveView={setActiveView}
-              onReportClick={handleReportClick}
-            />
-          )}
-          {activeView === "dashboard" && (
-            <Dashboard
-              incidents={incidents}
-              setIncidents={setIncidents}
-              onReportClick={handleReportClick}
-              loading={loading}
-              error={error}
-            />
-          )}
-          {activeView === "incidents" && (
-            <Incidents
-              incidents={incidents}
-              setIncidents={setIncidents}
-              onReportClick={handleReportClick}
-              loading={loading}
-              error={error}
-            />
-          )}
-          {activeView === "my-incidents" && isAuthenticated && <MyIncidents />}
-          {/* {activeView === "admin" && user?.is_admin && <AdminPanel />} */}
-          {activeView === "admin" &&
-            (user?.role === "admin" || user?.role === "superadmin") && (
-              <AdminPanel />
-            )}
-          {activeView === "user-management" && user?.role === "superadmin" && (
-            <UserManagement />
-          )}
-          {activeView === "map" && (
-            <div className="map-placeholder">
-              <h2>Carte des incidents</h2>
-              <p>Fonctionnalité bientôt disponible</p>
-              <p className="text-secondary">
-                Visualisez tous les incidents sur une carte interactive
-              </p>
-            </div>
-          )}
-          {activeView === "profile" && isAuthenticated && (
-            <div className="profile-page">
-              <h2>Mon Profil</h2>
-              <div className="profile-card">
-                <p>
-                  <strong>Nom:</strong> {user?.name}
-                </p>
-                <p>
-                  <strong>Email:</strong> {user?.email}
-                </p>
-                <p>
-                  <strong>Rôle:</strong>{" "}
-                  {user?.is_admin ? "Administrateur" : "Utilisateur"}
-                  <span style={{ textTransform: "capitalize" }}>
-                    {user?.role}
-                  </span>
-                </p>
-                <p>
-                  <strong>Membre depuis:</strong>{" "}
-                  {new Date(user?.created_at).toLocaleDateString("fr-FR")}
-                </p>
-              </div>
-            </div>
-          )}
+          {renderActiveView()}
         </main>
       </div>
 
+      {/* --- MODALS --- */}
       {showReportForm && (
         <ReportIncident
           onClose={() => setShowReportForm(false)}
-          onSuccess={handleReportIncident}
+          onSuccess={handleReportSuccess}
+        />
+      )}
+      {selectedIncident && (
+        <IncidentDetail
+          incident={selectedIncident}
+          onClose={() => setSelectedIncident(null)}
         />
       )}
     </div>
   );
 }
 
-// Composant App principal avec le Provider
+// The root component that provides the Auth context
 function App() {
   return (
     <AuthProvider>
