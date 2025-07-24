@@ -10,6 +10,7 @@ import ReportIncident from "./components/ReportIncident/ReportIncident";
 import UserManagement from "./pages/UserManagement/UserManagement";
 import Auth from "./components/Auth/Auth";
 import { AuthProvider, useAuth } from "./hooks/useAuth";
+import LandingPage from "./pages/LandingPage/LandingPage";
 import apiService from "./services/apiService";
 import "./App.css";
 
@@ -25,6 +26,14 @@ function AppContent() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
 
+  const handleAuthSuccess = () => {
+    setShowAuthModal(false);
+    loadIncidents();
+    if (user?.role === "user") {
+      setShowReportForm(true);
+    }
+  };
+
   // Charger les incidents au démarrage
   useEffect(() => {
     loadIncidents();
@@ -39,9 +48,14 @@ function AppContent() {
   }, [user]);
 
   const loadIncidents = async () => {
+    if (!apiService.auth.isAuthenticated()) {
+      setIncidents([]); // Ensure incidents are empty for logged-out users
+      setLoading(false);
+      return;
+    }
     try {
       setLoading(true);
-      console.log("Loading incidents...");
+      console.log("Loading incidents for authenticated user...");
       const data = await apiService.incidents.getAll();
       console.log("Raw API response:", data);
       setIncidents(data);
@@ -54,7 +68,7 @@ function AppContent() {
     }
   };
 
-  const handleReportIncident = async (incidentData) => {
+  const handleReportIncident = async () => {
     try {
       // L'incident est créé via l'API dans ReportIncident
       // On recharge juste la liste
@@ -72,6 +86,19 @@ function AppContent() {
       setShowAuthModal(true);
     }
   };
+  if (!isAuthenticated) {
+    return (
+      <div className={`app ${darkMode ? "dark-mode" : ""}`}>
+        <LandingPage onLoginClick={() => setShowAuthModal(true)} />
+        {showAuthModal && (
+          <Auth
+            onClose={() => setShowAuthModal(false)}
+            onSuccess={handleAuthSuccess}
+          />
+        )}
+      </div>
+    );
+  }
 
   // const handleAuthSuccess = () => {
   //   setShowAuthModal(false);
@@ -82,15 +109,6 @@ function AppContent() {
   //     setShowReportForm(true);
   //   }
   // };
-  const handleAuthSuccess = () => {
-    setShowAuthModal(false);
-    loadIncidents();
-    // This check was using the old 'is_admin' property.
-    // Now, we check if the user's role is 'user'.
-    if (user?.role === "user") {
-      setShowReportForm(true);
-    }
-  };
 
   const handleLogout = () => {
     logout();
@@ -138,18 +156,15 @@ function AppContent() {
         onLogout={handleLogout}
         onLoginClick={() => setShowAuthModal(true)}
       />
-
       <div className="app-container">
         <Sidebar
           sidebarOpen={sidebarOpen}
           activeView={activeView}
           setActiveView={setActiveView}
           incidentStats={incidentStats}
-          // isAdmin={user?.is_admin === true}
           userRole={user?.role}
           isAuthenticated={isAuthenticated}
         />
-
         <main className={`main-content ${sidebarOpen ? "sidebar-open" : ""}`}>
           {activeView === "home" && (
             <Home
@@ -225,13 +240,6 @@ function AppContent() {
         <ReportIncident
           onClose={() => setShowReportForm(false)}
           onSuccess={handleReportIncident}
-        />
-      )}
-
-      {showAuthModal && (
-        <Auth
-          onClose={() => setShowAuthModal(false)}
-          onSuccess={handleAuthSuccess}
         />
       )}
     </div>

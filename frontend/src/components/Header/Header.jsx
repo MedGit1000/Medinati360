@@ -11,13 +11,13 @@ import {
   ChevronDown,
 } from "lucide-react";
 import "./Header.css";
+import logoImage from "../../assets/360_logo.png";
 
 const Header = ({
   darkMode,
   setDarkMode,
   sidebarOpen,
   setSidebarOpen,
-  appName,
   onReportClick,
   user,
   onLogout,
@@ -35,7 +35,9 @@ const Header = ({
           >
             {sidebarOpen ? <X size={24} /> : <Menu size={24} />}
           </button>
-          <h1 className="header-title">{appName || "Gestion des Incidents"}</h1>
+          <a href="#" className="header-title">
+            <img src={logoImage} alt="Medinati360 Logo" />
+          </a>
         </div>
 
         <div className="header-right">

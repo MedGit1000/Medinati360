@@ -3,7 +3,7 @@
     top: 0;
     left: 0;
     right: 0;
-    height: 64px;
+    height: 67px;
     background-color: var(--bg-primary);
     border-bottom: 1px solid var(--border-color);
     box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
@@ -39,16 +39,16 @@
     color: var(--text-primary);
 }
 
-.header-title {
-    font-size: 20px;
-    font-weight: 600;
-    color: var(--text-primary);
+.header-title img {
+    height: 140px;
+    /* Adjust the height as you see fit */
+    width: auto;
 }
 
 .header-right {
     display: flex;
     align-items: center;
-    gap: 12px;
+    gap: 18px;
 }
 
 .btn-report-header {
