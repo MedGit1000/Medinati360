@@ -1,13 +1,14 @@
-.dashboard {
-    max-width: 1200px;
-    margin: 0 auto;
+/* === Redesigned Dashboard Styles (Dashboard.css) === */
+
+.dashboard-v2 {
+    animation: fadeIn 0.5s ease-out;
 }
 
 .dashboard-header {
     display: flex;
     justify-content: space-between;
     align-items: center;
-    margin-bottom: 32px;
+    margin-bottom: 24px;
 }
 
 .page-title {
@@ -16,64 +17,162 @@
     color: var(--text-primary);
 }
 
-.btn-primary {
+/* Re-using button style from Home for consistency */
+.btn-primary-solid {
     display: flex;
     align-items: center;
     gap: 8px;
-    background-color: var(--primary-color);
-    color: white;
-    border: none;
     padding: 10px 20px;
     border-radius: 8px;
     font-size: 14px;
-    font-weight: 500;
+    font-weight: 600;
     cursor: pointer;
-    transition: background-color 0.2s ease;
+    transition: all 0.2s ease;
+    border: none;
+    background: var(--primary-color);
+    color: white;
 }
 
-.btn-primary:hover {
-    background-color: var(--primary-hover);
+.btn-primary-solid:hover {
+    background: var(--primary-hover);
+    transform: translateY(-2px);
+    box-shadow: 0 4px 15px rgba(59, 130, 246, 0.2);
 }
 
-.stats-grid {
+.stats-grid-v2 {
     display: grid;
-    grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+    grid-template-columns: repeat(4, 1fr);
     gap: 24px;
-    margin-bottom: 48px;
+    margin-bottom: 32px;
 }
 
-.recent-incidents {
+/* Styles for StatsCard are in its own CSS file, but we can add overrides if needed */
+
+.dashboard-main-grid {
+    display: grid;
+    grid-template-columns: 1.5fr 1fr;
+    gap: 24px;
+}
+
+.chart-container,
+.recent-activity-container {
     background-color: var(--bg-primary);
-    border-radius: 12px;
-    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
-    overflow: hidden;
+    border: 1px solid var(--border-color);
+    border-radius: 16px;
+    padding: 24px;
+    box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.05);
 }
 
-.section-header {
-    padding: 24px;
-    border-bottom: 1px solid var(--border-color);
+.dark-mode .chart-container,
+.dark-mode .recent-activity-container {
+    box-shadow: none;
 }
 
 .section-title {
     font-size: 18px;
     font-weight: 600;
     color: var(--text-primary);
+    margin-bottom: 24px;
 }
 
-.incidents-list {
+/* --- Recent Activity Feed --- */
+.activity-feed {
     display: flex;
     flex-direction: column;
+    gap: 16px;
 }
 
-/* Responsive */
-@media (max-width: 768px) {
-    .dashboard-header {
-        flex-direction: column;
-        gap: 16px;
-        align-items: flex-start;
+.activity-item-v2 {
+    display: flex;
+    align-items: center;
+    gap: 16px;
+}
+
+.activity-icon {
+    flex-shrink: 0;
+    color: var(--text-secondary);
+}
+
+.activity-info {
+    flex-grow: 1;
+}
+
+.activity-title {
+    font-size: 14px;
+    font-weight: 500;
+    color: var(--text-primary);
+    margin-bottom: 2px;
+}
+
+.activity-meta {
+    font-size: 12px;
+    color: var(--text-secondary);
+}
+
+.activity-status-tag {
+    font-size: 12px;
+    font-weight: 600;
+    padding: 4px 10px;
+    border-radius: 16px;
+    white-space: nowrap;
+}
+
+.activity-status-tag.reçu {
+    background-color: #dbeafe;
+    color: #1e40af;
+}
+
+.activity-status-tag.en-cours {
+    background-color: #fef3c7;
+    color: #92400e;
+}
+
+.activity-status-tag.résolu {
+    background-color: #d1fae5;
+    color: #065f46;
+}
+
+.dark-mode .activity-status-tag.reçu {
+    background-color: rgba(59, 130, 246, 0.2);
+    color: #93bbfc;
+}
+
+.dark-mode .activity-status-tag.en-cours {
+    background-color: rgba(245, 158, 11, 0.2);
+    color: #fbbf24;
+}
+
+.dark-mode .activity-status-tag.résolu {
+    background-color: rgba(16, 185, 129, 0.2);
+    color: #6ee7b7;
+}
+
+.no-activity-info {
+    text-align: center;
+    padding: 40px 0;
+    color: var(--text-secondary);
+    font-size: 14px;
+}
+
+/* --- Responsive Design --- */
+@media (max-width: 1024px) {
+    .stats-grid-v2 {
+        grid-template-columns: 1fr 1fr;
     }
 
-    .stats-grid {
+    .dashboard-main-grid {
+        grid-template-columns: 1fr;
+    }
+}
+
+@media (max-width: 640px) {
+    .dashboard-header {
+        flex-direction: column;
+        align-items: flex-start;
+        gap: 16px;
+    }
+
+    .stats-grid-v2 {
         grid-template-columns: 1fr;
     }
 }

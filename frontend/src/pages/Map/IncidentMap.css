@@ -1,0 +1,32 @@
+.leaflet-div-icon {
+    background: transparent;
+    border: none;
+}
+
+.emoji-marker {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: 50%;
+    width: 40px;
+    height: 40px;
+    font-size: 24px;
+    background: white;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15), 0 0 0 1px rgba(0, 0, 0, 0.05);
+    border: 2px solid white;
+}
+
+.emoji-marker.status-resolved {
+    border-color: #10b981;
+    /* Green border for resolved */
+}
+
+.emoji-marker.status-in-progress {
+    border-color: #f59e0b;
+    /* Yellow border for in progress */
+}
+
+.emoji-marker.status-new {
+    border-color: #3b82f6;
+    /* Blue border for new */
+}

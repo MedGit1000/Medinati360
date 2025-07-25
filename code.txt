@@ -3,9 +3,9 @@ This digest is designed to be easily parsed by Large Language Models.
 
 --- SUMMARY ---
 Repository: Medinati360
-Files Analyzed: 126
-Total Text Size: 452.77 KB
-Estimated Tokens (text only): ~131.220
+Files Analyzed: 131
+Total Text Size: 459.62 KB
+Estimated Tokens (text only): ~132.600
 
 --- DIRECTORY STRUCTURE ---
 Medinati360/
@@ -135,9 +135,15 @@ Medinati360/
     │   │   ├── IncidentCard/
     │   │   │   ├── IncidentCard.css
     │   │   │   └── IncidentCard.jsx
+    │   │   ├── IncidentDetail/
+    │   │   │   ├── IncidentDetail.css
+    │   │   │   └── IncidentDetail.jsx
     │   │   ├── IncidentForm/
     │   │   │   ├── IncidentForm.css
     │   │   │   └── IncidentForm.jsx
+    │   │   ├── LocationPicker/
+    │   │   │   ├── LocationPicker.css
+    │   │   │   └── LocationPicker.jsx
     │   │   ├── ReportIncident/
     │   │   │   ├── ReportIncident.css
     │   │   │   └── ReportIncident.jsx
@@ -167,6 +173,8 @@ Medinati360/
     │   │   ├── LandingPage/
     │   │   │   ├── LandingPage.css
     │   │   │   └── LandingPage.jsx
+    │   │   ├── Map/
+    │   │   │   └── IncidentMap.jsx
     │   │   ├── MyIncidents/
     │   │   │   ├── MyIncidents.css
     │   │   │   └── MyIncidents.jsx
@@ -5993,257 +6001,560 @@ export default Header;
 ============================================================
 FILE: frontend/src/components/IncidentCard/IncidentCard.css
 ============================================================
-/* ---------- Design tokens ---------- */
-:root {
-    /* status colours */
-    --pending-bg: #fef3c7;
-    --pending-fg: #92400e;
-    --approved-bg: #d1fae5;
-    --approved-fg: #065f46;
-    --rejected-bg: #fee2e2;
-    --rejected-fg: #991b1b;
-}
+/* === Redesigned Incident Card Styles (IncidentCard.css) === */
 
-.dark-mode {
-    --pending-bg: rgba(245, 158, 11, 0.2);
-    --pending-fg: #fbbf24;
-    --approved-bg: rgba(16, 185, 129, 0.2);
-    --approved-fg: #6ee7b7;
-    --rejected-bg: rgba(239, 68, 68, 0.2);
-    --rejected-fg: #fca5a5;
-}
-
-/* ---------- Card shell ---------- */
-.incident-card {
-    padding: 20px 24px;
-    border-bottom: 1px solid var(--border-color);
+.incident-card-v2 {
+    background-color: var(--bg-primary);
+    border: 1px solid var(--border-color);
+    border-radius: 16px;
+    padding: 24px;
+    display: flex;
+    flex-direction: column;
     cursor: pointer;
-    transition: background-color 0.2s ease;
+    transition: all 0.2s ease-in-out;
+    box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.05);
 }
 
-.incident-card:hover {
+.incident-card-v2:hover {
+    transform: translateY(-4px);
+    box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1);
+    border-color: var(--primary-color);
+}
+
+.dark-mode .incident-card-v2 {
+    box-shadow: none;
+}
+
+.dark-mode .incident-card-v2:hover {
     background-color: var(--bg-secondary);
 }
 
-.incident-card:last-child {
-    border-bottom: none;
-}
-
-/* ---------- Header ---------- */
-.incident-card-header {
+.card-header {
     display: flex;
     justify-content: space-between;
-    align-items: flex-start;
-    gap: 16px;
-    margin-bottom: 12px;
+    align-items: center;
+    margin-bottom: 16px;
 }
 
-/* left-side column (icon + title + excerpt) */
-.incident-status {
+.card-category-icon {
+    width: 44px;
+    height: 44px;
+    border-radius: 10px;
     display: flex;
-    gap: 12px;
-    flex: 1;
+    align-items: center;
+    justify-content: center;
+    font-size: 20px;
+    background-color: var(--bg-secondary);
 }
 
-.status-icon {
-    width: 20px;
-    height: 20px;
-    margin-top: 2px;
-    flex-shrink: 0;
-}
-
-.status-icon.pending {
-    color: var(--pending-fg);
-}
-
-.status-icon.approved {
-    color: var(--approved-fg);
-}
-
-.status-icon.rejected {
-    color: var(--rejected-fg);
-}
-
-.incident-title {
-    font-size: 16px;
-    font-weight: 600;
-    color: var(--text-primary);
-    margin-bottom: 4px;
-}
-
-.incident-description {
-    font-size: 14px;
-    color: var(--text-secondary);
-    line-height: 1.5;
-}
-
-/* right-side badge */
-.status-badge {
-    padding: 4px 12px;
-    border-radius: 16px;
+.card-status-badge {
     font-size: 12px;
     font-weight: 600;
-    flex-shrink: 0;
+    padding: 6px 12px;
+    border-radius: 20px;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
 }
 
-.status-badge.pending {
-    background: var(--pending-bg);
-    color: var(--pending-fg);
+.card-status-badge.status-new {
+    background-color: #dbeafe;
+    color: #1e40af;
 }
 
-.status-badge.approved {
-    background: var(--approved-bg);
-    color: var(--approved-fg);
+.card-status-badge.status-progress {
+    background-color: #fef3c7;
+    color: #92400e;
 }
 
-.status-badge.rejected {
-    background: var(--rejected-bg);
-    color: var(--rejected-fg);
+.card-status-badge.status-resolved {
+    background-color: #d1fae5;
+    color: #065f46;
 }
 
-/* ---------- Footer meta ---------- */
-.incident-meta {
+.card-status-badge.status-default {
+    background-color: var(--bg-secondary);
+    color: var(--text-secondary);
+}
+
+.dark-mode .card-status-badge.status-new {
+    background-color: rgba(59, 130, 246, 0.2);
+    color: #93bbfc;
+}
+
+.dark-mode .card-status-badge.status-progress {
+    background-color: rgba(245, 158, 11, 0.2);
+    color: #fbbf24;
+}
+
+.dark-mode .card-status-badge.status-resolved {
+    background-color: rgba(16, 185, 129, 0.2);
+    color: #6ee7b7;
+}
+
+.card-body {
+    flex-grow: 1;
+}
+
+.card-title {
+    font-size: 18px;
+    font-weight: 600;
+    color: var(--text-primary);
+    margin-bottom: 8px;
+    line-height: 1.4;
+}
+
+.card-description {
+    font-size: 14px;
+    color: var(--text-secondary);
+    line-height: 1.6;
+    margin-bottom: 20px;
+}
+
+.card-footer {
     display: flex;
-    flex-wrap: wrap;
+    justify-content: space-between;
     align-items: center;
+    padding-top: 16px;
+    border-top: 1px solid var(--border-color);
+}
+
+.card-meta-info {
+    display: flex;
     gap: 16px;
+    align-items: center;
+}
+
+.meta-item {
+    display: flex;
+    align-items: center;
+    gap: 6px;
     font-size: 13px;
     color: var(--text-secondary);
 }
 
-.category-tag {
-    background: var(--bg-secondary);
-    padding: 2px 10px;
-    border-radius: 12px;
-    font-size: 12px;
-    font-weight: 500;
-    color: var(--text-primary);
+.card-action-icon {
+    color: var(--text-secondary);
+    transition: all 0.2s ease;
 }
 
-.dark-mode .category-tag {
-    background: rgba(255, 255, 255, 0.1);
+.incident-card-v2:hover .card-action-icon {
+    color: var(--primary-color);
+    transform: translateX(4px);
 }
 
 ============================================================
 FILE: frontend/src/components/IncidentCard/IncidentCard.jsx
 ============================================================
 import React from "react";
-import {
-  CheckCircle,
-  AlertTriangle,
-  AlertCircle,
-  Calendar,
-  User,
-  MapPin,
-} from "lucide-react";
-import "./IncidentCard.css";
+import { Clock, Eye } from "lucide-react";
 
-const IncidentCard = ({ incident, onClick }) => {
-  const getStatusIcon = (status) => {
+const EnhancedIncidentCard = ({ incident, onClick }) => {
+  // This safety check prevents crashes if incident data is temporarily unavailable.
+  if (!incident) {
+    return null;
+  }
+
+  // Helper to determine the color classes for the status badge
+  const getStatusColor = (status) => {
     switch (status) {
       case "Reçu":
-        return <AlertCircle className="status-icon new" />;
+        return "bg-blue-100 text-blue-800 border-blue-200 dark:bg-blue-900/50 dark:text-blue-300 dark:border-blue-700";
       case "En cours":
-        return <AlertTriangle className="status-icon progress" />;
+        return "bg-yellow-100 text-yellow-800 border-yellow-200 dark:bg-yellow-900/50 dark:text-yellow-300 dark:border-yellow-700";
       case "Résolu":
-        return <CheckCircle className="status-icon resolved" />;
+        return "bg-green-100 text-green-800 border-green-200 dark:bg-green-900/50 dark:text-green-300 dark:border-green-700";
       default:
-        return <AlertTriangle className="status-icon" />;
+        return "bg-gray-100 text-gray-800 border-gray-200 dark:bg-gray-700 dark:text-gray-300 dark:border-gray-600";
     }
   };
 
-  // const getStatusClass = (status) => {
-  //   switch (status) {
-  //     case "Reçu":
-  //       return "status-new";
-  //     case "En cours":
-  //       return "status-progress";
-  //     case "Résolu":
-  //       return "status-resolved";
-  //     default:
-  //       return "";
-  //   }
-  // };
-  const STATUS = {
-    Pending: { cls: "status-pending", Icon: AlertCircle },
-    Approved: { cls: "status-approved", Icon: CheckCircle },
-    Rejected: { cls: "status-rejected", Icon: AlertTriangle },
-  };
-
-  const getStatusClass = (status) => STATUS[status]?.cls || "";
-  const formatDate = (dateString) => {
-    if (!dateString) return "N/A";
-    const date = new Date(dateString);
-    if (isNaN(date.getTime())) return "Date invalide";
-
-    return date.toLocaleDateString("fr-FR", {
-      day: "numeric",
-      month: "short",
-      year: "numeric",
-    });
-  };
-
-  const formatTime = (dateString) => {
-    if (!dateString) return "";
-    const date = new Date(dateString);
-    if (isNaN(date.getTime())) return "";
-
-    return date.toLocaleTimeString("fr-FR", {
-      hour: "2-digit",
-      minute: "2-digit",
-    });
+  // Helper to get a representative emoji for each category
+  const getCategoryIcon = (categoryName) => {
+    if (!categoryName) return "📋";
+    if (categoryName.includes("Voirie")) return "🛣️";
+    if (categoryName.includes("Éclairage")) return "💡";
+    if (categoryName.includes("Propreté")) return "🧹";
+    if (categoryName.includes("Espaces Verts")) return "🌳";
+    if (categoryName.includes("Sécurité")) return "🛡️";
+    if (categoryName.includes("Services")) return "🏢";
+    return "📋";
   };
 
   return (
-    <div className="incident-card" onClick={onClick}>
-      <div className="incident-card-header">
-        <div className="incident-status">
-          {getStatusIcon(incident.status)}
-          <div className="incident-info">
-            <h4 className="incident-title">{incident.title}</h4>
-            <p className="incident-description">
-              {incident.description.length > 100
-                ? incident.description.substring(0, 100) + "..."
-                : incident.description}
-            </p>
+    <div
+      className="group bg-white dark:bg-gray-800/50 rounded-xl border border-gray-200 dark:border-gray-700 hover:border-blue-400 dark:hover:border-blue-600 hover:shadow-xl transition-all duration-300 cursor-pointer overflow-hidden flex flex-col"
+      onClick={onClick}
+    >
+      <div className="p-5 flex-grow">
+        <div className="flex items-start justify-between mb-3">
+          <div className="flex items-center gap-4">
+            <div className="text-3xl bg-gray-100 dark:bg-gray-700 w-12 h-12 flex items-center justify-center rounded-lg">
+              {getCategoryIcon(incident.category?.name)}
+            </div>
+            <div>
+              <h3 className="font-semibold text-gray-900 dark:text-gray-100 group-hover:text-blue-600 dark:group-hover:text-blue-400 transition-colors line-clamp-2 leading-tight">
+                {incident.title}
+              </h3>
+            </div>
           </div>
-        </div>
-        <span className={`status-badge ${getStatusClass(incident.status)}`}>
-          {incident.status}
-        </span>
-      </div>
-
-      <div className="incident-meta">
-        <div className="meta-item">
-          <Calendar size={14} />
-          <span>
-            {formatDate(incident.created_at)}
-            {incident.created_at && ` à ${formatTime(incident.created_at)}`}
+          <span
+            className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium border ${getStatusColor(
+              incident.status
+            )}`}
+          >
+            {incident.status}
           </span>
         </div>
-        <div className="meta-item">
-          <User size={14} />
-          <span>{incident.user?.name || "Utilisateur inconnu"}</span>
+
+        <p className="text-gray-600 dark:text-gray-400 text-sm mb-4 line-clamp-3">
+          {incident.description}
+        </p>
+      </div>
+
+      <div className="bg-gray-50 dark:bg-gray-800 px-5 py-3 border-t border-gray-100 dark:border-gray-700 flex items-center justify-between text-xs text-gray-500 dark:text-gray-400 mt-auto">
+        <div className="flex items-center gap-1.5">
+          <Clock size={12} />
+          <span>
+            {new Date(incident.created_at).toLocaleDateString("fr-FR")}
+          </span>
         </div>
-        {incident.category && (
-          <div className="meta-item">
-            <span className="category-tag">
-              {incident.category.name || "Sans catégorie"}
-            </span>
-          </div>
-        )}
-        {incident.latitude && incident.longitude && (
-          <div className="meta-item">
-            <MapPin size={14} />
-            <span>Localisé</span>
-          </div>
-        )}
+        <div className="flex items-center gap-1.5 text-blue-600 dark:text-blue-400 opacity-0 group-hover:opacity-100 transition-opacity duration-300">
+          <Eye size={12} />
+          <span>Voir détails</span>
+        </div>
       </div>
     </div>
   );
 };
 
-export default IncidentCard;
+export default EnhancedIncidentCard;
+
+
+============================================================
+FILE: frontend/src/components/IncidentDetail/IncidentDetail.css
+============================================================
+/* Create this new file at: frontend/src/components/IncidentDetail/IncidentDetail.css */
+
+.incident-detail-modal {
+    background: var(--bg-primary);
+    border-radius: 16px;
+    width: 100%;
+    max-width: 700px;
+    max-height: 90vh;
+    overflow-y: auto;
+    box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.25);
+    display: flex;
+    flex-direction: column;
+    animation: modal-fade-in 0.3s ease-out;
+}
+
+@keyframes modal-fade-in {
+    from {
+        opacity: 0;
+        transform: translateY(20px) scale(0.98);
+    }
+
+    to {
+        opacity: 1;
+        transform: translateY(0) scale(1);
+    }
+}
+
+.incident-detail-modal .modal-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+    padding: 24px;
+    border-bottom: 1px solid var(--border-color);
+    position: sticky;
+    top: 0;
+    background: var(--bg-primary);
+    z-index: 10;
+}
+
+.modal-header-content {
+    display: flex;
+    gap: 16px;
+    align-items: center;
+}
+
+.status-icon-wrapper {
+    width: 48px;
+    height: 48px;
+    border-radius: 12px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+}
+
+.status-icon-wrapper.approved {
+    background-color: var(--approved-bg);
+    color: var(--approved-fg);
+}
+
+.status-icon-wrapper.rejected {
+    background-color: var(--rejected-bg);
+    color: var(--rejected-fg);
+}
+
+.status-icon-wrapper.pending {
+    background-color: var(--pending-bg);
+    color: var(--pending-fg);
+}
+
+.modal-title {
+    font-size: 20px;
+    font-weight: 600;
+    color: var(--text-primary);
+    line-height: 1.3;
+}
+
+.modal-subtitle {
+    font-size: 14px;
+    color: var(--text-secondary);
+}
+
+.incident-detail-modal .modal-body {
+    padding: 24px;
+}
+
+.detail-section {
+    margin-bottom: 24px;
+}
+
+.detail-section h4 {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    font-size: 14px;
+    font-weight: 600;
+    color: var(--text-secondary);
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    margin-bottom: 12px;
+}
+
+.detail-description {
+    font-size: 16px;
+    line-height: 1.7;
+    color: var(--text-primary);
+    background: var(--bg-secondary);
+    padding: 16px;
+    border-radius: 8px;
+}
+
+.detail-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 12px;
+}
+
+.detail-item {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    background: var(--bg-secondary);
+    padding: 12px;
+    border-radius: 8px;
+    font-size: 14px;
+    color: var(--text-secondary);
+}
+
+.detail-item strong {
+    color: var(--text-primary);
+    font-weight: 500;
+}
+
+.rejection-callout {
+    display: flex;
+    gap: 12px;
+    padding: 16px;
+    border-radius: 8px;
+    background-color: var(--rejected-bg);
+    color: var(--rejected-fg);
+    border-left: 4px solid var(--rejected-fg);
+}
+
+.rejection-callout strong {
+    display: block;
+    margin-bottom: 4px;
+}
+
+.photo-container {
+    border-radius: 12px;
+    overflow: hidden;
+}
+
+.detail-photo {
+    width: 100%;
+    display: block;
+    max-height: 400px;
+    object-fit: cover;
+}
+
+.detail-map-container {
+    border-radius: 12px;
+    overflow: hidden;
+    border: 1px solid var(--border-color);
+}
+
+/* Responsive */
+@media (max-width: 640px) {
+    .detail-grid {
+        grid-template-columns: 1fr;
+    }
+}
+
+============================================================
+FILE: frontend/src/components/IncidentDetail/IncidentDetail.jsx
+============================================================
+import React from "react";
+import {
+  X,
+  XCircle,
+  Calendar,
+  User,
+  Tag,
+  MapPin,
+  Camera,
+  AlertTriangle,
+  CheckCircle,
+  Clock,
+} from "lucide-react";
+import { MapContainer, TileLayer, Marker, Popup } from "react-leaflet";
+import "leaflet/dist/leaflet.css";
+import L from "leaflet";
+import markerIcon2x from "leaflet/dist/images/marker-icon-2x.png";
+import markerIcon from "leaflet/dist/images/marker-icon.png";
+import markerShadow from "leaflet/dist/images/marker-shadow.png";
+import "./IncidentDetail.css";
+
+// This is a common fix for a known issue with Leaflet's default icon in React projects.
+delete L.Icon.Default.prototype._getIconUrl;
+L.Icon.Default.mergeOptions({
+  iconRetinaUrl: markerIcon2x,
+  iconUrl: markerIcon,
+  shadowUrl: markerShadow,
+});
+
+const IncidentDetail = ({ incident, onClose }) => {
+  if (!incident) return null;
+
+  const position = [incident.latitude, incident.longitude];
+
+  const formatDate = (dateString) =>
+    new Date(dateString).toLocaleString("fr-FR", {
+      day: "numeric",
+      month: "long",
+      year: "numeric",
+      hour: "2-digit",
+      minute: "2-digit",
+    });
+
+  const getStatusInfo = (incident) => {
+    if (incident.is_approved) {
+      return { text: "Approuvé", className: "approved", Icon: CheckCircle };
+    }
+    if (incident.rejection_reason) {
+      return { text: "Rejeté", className: "rejected", Icon: XCircle };
+    }
+    return { text: "En attente", className: "pending", Icon: Clock };
+  };
+
+  const statusInfo = getStatusInfo(incident);
+
+  return (
+    <div className="modal-overlay" onClick={onClose}>
+      <div
+        className="incident-detail-modal"
+        onClick={(e) => e.stopPropagation()}
+      >
+        <div className="modal-header">
+          <div className="modal-header-content">
+            <div className={`status-icon-wrapper ${statusInfo.className}`}>
+              <statusInfo.Icon size={24} />
+            </div>
+            <div>
+              <h2 className="modal-title">{incident.title}</h2>
+              <p className="modal-subtitle">
+                {incident.category?.name || "Non classé"}
+              </p>
+            </div>
+          </div>
+          <button className="modal-close" onClick={onClose}>
+            <X size={24} />
+          </button>
+        </div>
+
+        <div className="modal-body">
+          <div className="detail-section">
+            <p className="detail-description">{incident.description}</p>
+          </div>
+
+          <div className="detail-grid">
+            <div className="detail-item">
+              <User size={16} /> <strong>Signalé par:</strong>{" "}
+              {incident.user?.name || "Anonyme"}
+            </div>
+            <div className="detail-item">
+              <Calendar size={16} /> <strong>Date:</strong>{" "}
+              {formatDate(incident.created_at)}
+            </div>
+          </div>
+
+          {incident.rejection_reason && (
+            <div className="detail-section">
+              <div className="rejection-callout">
+                <AlertTriangle size={20} />
+                <div>
+                  <strong>Raison du Rejet:</strong>
+                  <p>{incident.rejection_reason}</p>
+                </div>
+              </div>
+            </div>
+          )}
+
+          {incident.photo_path && (
+            <div className="detail-section">
+              <h4>
+                <Camera size={18} /> Photo
+              </h4>
+              <div className="photo-container">
+                <img
+                  src={`http://localhost:8000/storage/${incident.photo_path}`}
+                  alt="Photo de l'incident"
+                  className="detail-photo"
+                />
+              </div>
+            </div>
+          )}
+
+          <div className="detail-section">
+            <h4>
+              <MapPin size={18} /> Localisation
+            </h4>
+            <div className="detail-map-container">
+              <MapContainer
+                center={position}
+                zoom={15}
+                scrollWheelZoom={false}
+                style={{ height: "250px", width: "100%" }}
+              >
+                <TileLayer url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png" />
+                <Marker position={position}>
+                  <Popup>{incident.title}</Popup>
+                </Marker>
+              </MapContainer>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+};
+
+export default IncidentDetail;
 
 
 ============================================================
@@ -6531,6 +6842,90 @@ function IncidentForm({ onIncidentCreated }) {
 }
 
 export default IncidentForm;
+
+
+============================================================
+FILE: frontend/src/components/LocationPicker/LocationPicker.jsx
+============================================================
+import React, { useState } from "react";
+import {
+  MapContainer,
+  TileLayer,
+  Marker,
+  useMapEvents,
+  Popup,
+} from "react-leaflet";
+import "leaflet/dist/leaflet.css";
+import L from "leaflet";
+import markerIcon2x from "leaflet/dist/images/marker-icon-2x.png";
+import markerIcon from "leaflet/dist/images/marker-icon.png";
+import markerShadow from "leaflet/dist/images/marker-shadow.png";
+
+// This is a fix for a known issue with Leaflet's default icon in React
+delete L.Icon.Default.prototype._getIconUrl;
+L.Icon.Default.mergeOptions({
+  iconRetinaUrl: markerIcon2x,
+  iconUrl: markerIcon,
+  shadowUrl: markerShadow,
+});
+
+// This is a small helper component that listens for map clicks
+function LocationMarker({ onLocationSelect }) {
+  const [position, setPosition] = useState(null);
+
+  // This hook from react-leaflet captures map events
+  useMapEvents({
+    click(e) {
+      // Extract the lat and lng values from the event object
+      const { lat, lng } = e.latlng;
+
+      // Set the marker's position on the map
+      setPosition(e.latlng);
+
+      // THE FIX IS HERE: Pass the lat and lng as two separate arguments
+      // instead of a single object. This matches what the parent component expects.
+      onLocationSelect(lat, lng);
+    },
+  });
+
+  // Render the marker only after a position has been selected
+  return position === null ? null : (
+    <Marker position={position}>
+      <Popup>Localisation sélectionnée</Popup>
+    </Marker>
+  );
+}
+
+const LocationPicker = ({ onLocationSelect }) => {
+  // Default center for the map (Rabat, Morocco)
+  const initialPosition = [34.020882, -6.84165];
+
+  return (
+    <div
+      style={{
+        height: "400px",
+        width: "100%",
+        borderRadius: "12px",
+        overflow: "hidden",
+        border: "1px solid var(--border-color)",
+      }}
+    >
+      <MapContainer
+        center={initialPosition}
+        zoom={13}
+        style={{ height: "100%", width: "100%" }}
+      >
+        <TileLayer
+          url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
+          attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
+        />
+        <LocationMarker onLocationSelect={onLocationSelect} />
+      </MapContainer>
+    </div>
+  );
+};
+
+export default LocationPicker;
 
 
 ============================================================
@@ -7028,26 +7423,31 @@ FILE: frontend/src/components/ReportIncident/ReportIncident.css
 ============================================================
 FILE: frontend/src/components/ReportIncident/ReportIncident.jsx
 ============================================================
+// frontend/src/components/ReportIncident/ReportIncident.jsx
+
 import React, { useState, useEffect } from "react";
 import {
   X,
   Camera,
   MapPin,
-  AlertCircle,
-  Upload,
-  Info,
-  Loader,
+  Navigation,
   CheckCircle,
+  Upload,
+  Loader,
+  AlertCircle,
+  ArrowLeft,
 } from "lucide-react";
 import apiService from "../../services/apiService";
+import LocationPicker from "../LocationPicker/LocationPicker";
 import "./ReportIncident.css";
 
 const ReportIncident = ({ onClose, onSuccess }) => {
   const [loading, setLoading] = useState(false);
+  const [isLocating, setIsLocating] = useState(false);
   const [error, setError] = useState("");
   const [success, setSuccess] = useState(false);
   const [categories, setCategories] = useState([]);
-  const [step, setStep] = useState(1);
+  const [locationMethod, setLocationMethod] = useState(null); // 'gps', 'map', or null
 
   const [formData, setFormData] = useState({
     title: "",
@@ -7055,427 +7455,327 @@ const ReportIncident = ({ onClose, onSuccess }) => {
     category_id: "",
     latitude: null,
     longitude: null,
-    address: "", // Pour l'affichage
+    address: "",
     photo: null,
   });
 
-  // Charger les catégories depuis l'API
   useEffect(() => {
-    loadCategories();
+    // Fetch categories from your API
+    apiService.incidents
+      .getCategories()
+      .then(setCategories)
+      .catch((err) => console.error("Failed to load categories", err));
   }, []);
 
-  const loadCategories = async () => {
+  // Function to set location and fetch address
+  const setLocation = async (lat, lng) => {
+    setIsLocating(true);
+    setFormData((prev) => ({
+      ...prev,
+      latitude: lat,
+      longitude: lng,
+      address: "Recherche de l'adresse...",
+    }));
     try {
-      const response = await fetch("http://localhost:8000/api/categories", {
-        headers: {
-          Accept: "application/json",
-        },
-      });
-
-      if (response.ok) {
-        const data = await response.json();
-        setCategories(data);
-      } else {
-        // Use default categories if API fails
-        setCategories([
-          { id: 1, name: "Voirie & Circulation", icon: "🚗" },
-          { id: 2, name: "Propreté & Environnement", icon: "🧹" },
-          { id: 3, name: "Éclairage Public", icon: "💡" },
-          { id: 4, name: "Espaces Verts & Parcs", icon: "🌳" },
-          { id: 5, name: "Sécurité & Ordre Public", icon: "👮" },
-          { id: 6, name: "Services & Infrastructures", icon: "💧" },
-        ]);
-      }
-    } catch (err) {
-      console.error("Erreur chargement catégories:", err);
-      // Use default categories
-      setCategories([
-        { id: 1, name: "Voirie & Circulation", icon: "🚗" },
-        { id: 2, name: "Propreté & Environnement", icon: "🧹" },
-        { id: 3, name: "Éclairage Public", icon: "💡" },
-        { id: 4, name: "Espaces Verts & Parcs", icon: "🌳" },
-        { id: 5, name: "Sécurité & Ordre Public", icon: "👮" },
-        { id: 6, name: "Services & Infrastructures", icon: "💧" },
-      ]);
+      const fetchedAddress =
+        await apiService.incidents.getAddressFromCoordinates({ lat, lng });
+      setFormData((prev) => ({ ...prev, address: fetchedAddress }));
+    } catch {
+      setFormData((prev) => ({ ...prev, address: "Adresse non trouvée" }));
+    } finally {
+      setIsLocating(false);
     }
   };
 
-  const handleGetLocation = () => {
+  // Handler for the "Use My Current Location" button
+  const handleGetCurrentLocation = () => {
     if (!navigator.geolocation) {
-      setError("La géolocalisation n'est pas supportée par votre navigateur");
+      setError("La géolocalisation n'est pas supportée par votre navigateur.");
       return;
     }
-
-    setLoading(true);
-    setError("");
-
+    setIsLocating(true);
     navigator.geolocation.getCurrentPosition(
       (position) => {
-        setFormData((prev) => ({
-          ...prev,
-          latitude: position.coords.latitude,
-          longitude: position.coords.longitude,
-          address: `Lat: ${position.coords.latitude.toFixed(
-            6
-          )}, Lng: ${position.coords.longitude.toFixed(6)}`,
-        }));
-        setLoading(false);
-        setError("");
+        setLocation(position.coords.latitude, position.coords.longitude);
       },
-      (error) => {
-        let errorMessage = "Impossible d'obtenir votre position.";
-
-        switch (error.code) {
-          case error.PERMISSION_DENIED:
-            errorMessage =
-              "Vous avez refusé l'accès à votre position. Veuillez autoriser l'accès dans les paramètres de votre navigateur.";
-            break;
-          case error.POSITION_UNAVAILABLE:
-            errorMessage = "Information de localisation non disponible.";
-            break;
-          case error.TIMEOUT:
-            errorMessage = "La demande de localisation a expiré.";
-            break;
-        }
-
-        setError(errorMessage);
-        setLoading(false);
+      () => {
+        setError(
+          "Impossible d'obtenir votre position. Veuillez l'autoriser ou la sélectionner sur la carte."
+        );
+        setIsLocating(false);
       },
-      {
-        enableHighAccuracy: true,
-        timeout: 10000,
-        maximumAge: 0,
-      }
+      { enableHighAccuracy: true, timeout: 10000 }
     );
   };
 
   const handlePhotoChange = (e) => {
+    // ... (this function remains the same as before)
     const file = e.target.files[0];
     if (file) {
-      // Vérifier la taille du fichier (max 5MB)
       if (file.size > 5 * 1024 * 1024) {
-        setError("La photo ne doit pas dépasser 5MB");
+        setError("La photo ne doit pas dépasser 5MB.");
         return;
       }
-
-      // Vérifier le type de fichier
       if (!file.type.startsWith("image/")) {
-        setError("Veuillez sélectionner une image valide");
+        setError("Veuillez sélectionner une image valide.");
         return;
       }
-
-      setFormData({
-        ...formData,
-        photo: file,
-      });
+      setFormData({ ...formData, photo: file });
       setError("");
     }
   };
 
-  // const handleSubmit = async () => {
-  //   console.log("Submitting form with data:", formData);
-  //   setLoading(true);
-  //   setError("");
-
-  //   try {
-  //     // Vérifier l'authentification
-  //     if (!apiService.auth.isAuthenticated()) {
-  //       setError("Vous devez être connecté pour signaler un incident");
-  //       setLoading(false);
-  //       return;
-  //     }
-
-  //     // Validation
-  //     if (!formData.title || !formData.description || !formData.category_id) {
-  //       setError("Veuillez remplir tous les champs obligatoires");
-  //       setLoading(false);
-  //       return;
-  //     }
-
-  //     if (!formData.latitude || !formData.longitude) {
-  //       setError("Veuillez indiquer la localisation de l'incident");
-  //       setLoading(false);
-  //       return;
-  //     }
-
-  //     console.log("Sending to API...");
-
-  //     // Créer l'incident
-  //     const response = await apiService.incidents.create(formData);
-  //     console.log("API Response:", response);
-
-  //     // Afficher le message de succès
-  //     setSuccess(true);
-
-  //     // Attendre un peu avant de fermer pour montrer le message de succès
-  //     setTimeout(() => {
-  //       if (response.incident) {
-  //         onSuccess(response.incident);
-  //       } else {
-  //         onSuccess(response);
-  //       }
-  //       onClose();
-  //     }, 2000);
-  //   } catch (err) {
-  //     console.error("Erreur création incident:", err);
-  //     setError(err.message || "Erreur lors de la création de l'incident");
-  //   } finally {
-  //     setLoading(false);
-  //   }
-  // };
-  // PASTE THIS NEW FUNCTION IN ITS PLACE
-  // In ReportIncident.jsx, replace the whole handleSubmit function with this one:
   const handleSubmit = async () => {
-    // 1. Perform validation
-    if (!formData.title || !formData.description || !formData.category_id) {
-      setError("Veuillez remplir tous les champs obligatoires.");
+    // ... (this function remains the same as before)
+    if (!formData.latitude || !formData.longitude) {
+      setError("Veuillez d'abord sélectionner une localisation sur la carte.");
       return;
     }
-    if (!formData.latitude || !formData.longitude) {
-      setError("Veuillez indiquer la localisation de l'incident.");
+    if (!formData.title || !formData.description || !formData.category_id) {
+      setError("Veuillez remplir tous les champs obligatoires.");
       return;
     }
 
     setLoading(true);
     setError("");
-
     try {
-      // 2. Call the API. We don't need the response variable, which fixes the error.
       await apiService.incidents.create(formData);
-
-      // 3. On success, update the UI and call the parent's success handler
       setSuccess(true);
-      setLoading(false); // Stop the spinner
-
-      // 4. After 2 seconds, the parent component will close the modal
       setTimeout(() => {
         onSuccess();
+        onClose();
       }, 2000);
     } catch (err) {
-      // 5. If anything fails, show the error
-      console.error("Incident creation failed:", err);
       setError(err.message || "Une erreur est survenue lors de la soumission.");
-      setLoading(false); // Stop the spinner on failure
+    } finally {
+      setLoading(false);
     }
   };
 
-  const renderStep1 = () => (
-    <div className="step-content">
-      <h3 className="step-title">Informations de base</h3>
-
-      <div className="form-group">
-        <label className="form-label">
-          Titre <span className="required">*</span>
-        </label>
-        <input
-          type="text"
-          className="form-input"
-          placeholder="Ex: Trou dangereux sur l'avenue Mohammed V"
-          value={formData.title}
-          onChange={(e) => setFormData({ ...formData, title: e.target.value })}
-          maxLength={255}
-        />
-        <span className="char-count">{formData.title.length}/255</span>
-      </div>
-
-      <div className="form-group">
-        <label className="form-label">
-          Description <span className="required">*</span>
-        </label>
-        <textarea
-          className="form-textarea"
-          rows={4}
-          placeholder="Décrivez précisément le problème..."
-          value={formData.description}
-          onChange={(e) =>
-            setFormData({ ...formData, description: e.target.value })
-          }
-        />
-      </div>
-
-      <div className="form-group">
-        <label className="form-label">
-          Catégorie <span className="required">*</span>
-        </label>
-        <select
-          className="form-select"
-          value={formData.category_id}
-          onChange={(e) =>
-            setFormData({ ...formData, category_id: e.target.value })
-          }
-        >
-          <option value="">Sélectionnez une catégorie</option>
-          {categories.map((category) => (
-            <option key={category.id} value={category.id}>
-              {category.icon} {category.name}
-            </option>
-          ))}
-        </select>
-      </div>
-
-      <button
-        className="btn-next"
-        onClick={() => setStep(2)}
-        disabled={
-          !formData.title || !formData.description || !formData.category_id
-        }
-      >
-        Continuer
-      </button>
-    </div>
-  );
-
-  const renderStep2 = () => (
-    <div className="step-content">
-      <h3 className="step-title">Localisation et photo</h3>
-
-      <div className="form-group">
-        <label className="form-label">
-          Localisation <span className="required">*</span>
-        </label>
-        <div className="location-input-group">
-          <input
-            type="text"
-            className="form-input"
-            placeholder="Cliquez sur le bouton pour obtenir votre position"
-            value={formData.address}
-            readOnly
-          />
-          <button
-            className="btn-location"
-            onClick={handleGetLocation}
-            title="Utiliser ma position actuelle"
-            disabled={loading}
-          >
-            {loading ? (
-              <Loader className="animate-spin" size={20} />
-            ) : (
-              <MapPin size={20} />
-            )}
-          </button>
-        </div>
-        {formData.latitude && formData.longitude && (
-          <p className="location-status success">
-            <CheckCircle size={16} /> Position GPS enregistrée
-          </p>
-        )}
-      </div>
-
-      <div className="form-group">
-        <label className="form-label">Photo (optionnel)</label>
-        <div className="photo-upload-area">
-          <input
-            type="file"
-            id="photo-upload"
-            accept="image/*"
-            onChange={handlePhotoChange}
-            className="hidden-input"
-          />
-          <label htmlFor="photo-upload" className="upload-label">
-            <Camera size={32} />
-            <span>Ajouter une photo</span>
-            <span className="upload-hint">
-              Cliquez pour sélectionner (max 5MB)
-            </span>
-          </label>
-        </div>
-        {formData.photo && (
-          <div className="photo-preview">
-            <img
-              src={URL.createObjectURL(formData.photo)}
-              alt="Aperçu"
-              className="preview-image"
-            />
-            <button
-              className="remove-photo"
-              onClick={() => setFormData({ ...formData, photo: null })}
-              title="Supprimer la photo"
-            >
-              <X size={16} />
-            </button>
-          </div>
-        )}
-      </div>
-
-      {error && (
-        <div className="error-message">
-          <AlertCircle size={16} />
-          {error}
-        </div>
-      )}
-
-      {success && (
-        <div className="success-message">
-          <CheckCircle size={16} />
-          Incident créé avec succès ! Il sera visible après approbation.
-        </div>
-      )}
-
-      <div className="info-message">
-        <Info size={16} />
-        <span>
-          Votre signalement sera examiné par un administrateur avant d'être
-          publié.
-        </span>
-      </div>
-
-      <button
-        className="btn-submit"
-        onClick={handleSubmit}
-        disabled={
-          loading || success || !formData.latitude || !formData.longitude
-        }
-      >
-        {loading ? (
-          <>
-            <Loader className="animate-spin" size={20} />
-            Envoi en cours...
-          </>
-        ) : success ? (
-          <>
-            <CheckCircle size={20} />
-            Incident envoyé !
-          </>
-        ) : (
-          "Envoyer le signalement"
-        )}
-      </button>
-    </div>
-  );
-  console.log("DEBUG BUTTON STATE:", {
-    loading: loading,
-    success: success,
-    hasLatitude: !!formData.latitude,
-    hasLongitude: !!formData.longitude,
-  });
+  // Function to reset location and go back to the choice screen
+  const resetLocation = () => {
+    setLocationMethod(null);
+    setFormData((prev) => ({
+      ...prev,
+      latitude: null,
+      longitude: null,
+      address: "",
+    }));
+  };
 
   return (
     <div className="modal-overlay" onClick={onClose}>
       <div className="report-modal" onClick={(e) => e.stopPropagation()}>
         <div className="modal-header">
-          <h2 className="modal-title">Signaler un incident</h2>
+          <h2 className="modal-title">Signaler un Incident</h2>
           <button className="modal-close" onClick={onClose}>
             <X size={24} />
           </button>
         </div>
-
-        <div className="progress-bar">
-          <div
-            className="progress-fill"
-            style={{ width: `${(step / 2) * 100}%` }}
-          ></div>
-        </div>
-
         <div className="modal-body">
-          {step === 1 && renderStep1()}
-          {step === 2 && renderStep2()}
-        </div>
+          {success ? (
+            <div
+              className="success-message"
+              style={{
+                padding: "40px 20px",
+                display: "flex",
+                flexDirection: "column",
+                alignItems: "center",
+              }}
+            >
+              <CheckCircle size={48} style={{ marginBottom: "20px" }} />
+              <h3 style={{ textAlign: "center", fontSize: "18px" }}>
+                Signalement Envoyé !
+              </h3>
+              <p
+                style={{
+                  textAlign: "center",
+                  color: "var(--text-secondary)",
+                  marginTop: "8px",
+                }}
+              >
+                Merci pour votre contribution. Votre signalement sera examiné.
+              </p>
+            </div>
+          ) : (
+            <>
+              {/* === Step 1: Location Choice === */}
+              {!formData.latitude && (
+                <div className="form-group">
+                  <label className="form-label">
+                    Comment voulez-vous localiser l'incident ?{" "}
+                    <span className="required">*</span>
+                  </label>
+                  <div
+                    className="location-choice-buttons"
+                    style={{
+                      display: "flex",
+                      gap: "10px",
+                      flexDirection: "column",
+                    }}
+                  >
+                    <button
+                      className="btn-location-choice"
+                      onClick={handleGetCurrentLocation}
+                      disabled={isLocating}
+                    >
+                      {isLocating ? (
+                        <Loader className="animate-spin" size={20} />
+                      ) : (
+                        <Navigation size={20} />
+                      )}
+                      <span>Utiliser ma position actuelle</span>
+                    </button>
+                    <button
+                      className="btn-location-choice"
+                      onClick={() => setLocationMethod("map")}
+                    >
+                      <MapPin size={20} />
+                      <span>Choisir sur la carte</span>
+                    </button>
+                  </div>
+                </div>
+              )}
 
-        {step > 1 && !success && (
-          <button className="btn-back" onClick={() => setStep(step - 1)}>
-            ← Retour
-          </button>
-        )}
+              {locationMethod === "map" && !formData.latitude && (
+                <div className="form-group">
+                  <p
+                    style={{
+                      fontSize: "13px",
+                      color: "var(--text-secondary)",
+                      marginBottom: "12px",
+                    }}
+                  >
+                    Cliquez sur la carte pour placer un marqueur.
+                  </p>
+                  <LocationPicker onLocationSelect={setLocation} />
+                  <button
+                    onClick={() => setLocationMethod(null)}
+                    className="btn-back"
+                    style={{ position: "static", marginTop: "10px" }}
+                  >
+                    <ArrowLeft size={16} /> Retour
+                  </button>
+                </div>
+              )}
+
+              {/* === Step 2: Form Details (shows after location is set) === */}
+              {formData.latitude && (
+                <div className="step-content">
+                  <div className="form-group">
+                    <label className="form-label">
+                      Localisation Sélectionnée
+                    </label>
+                    <p className="location-address-display">
+                      {formData.address}
+                    </p>
+                    <button
+                      onClick={resetLocation}
+                      className="link-button"
+                      style={{ fontSize: "13px" }}
+                    >
+                      Changer la localisation
+                    </button>
+                  </div>
+
+                  {/* The rest of the form is the same */}
+                  <div className="form-group">
+                    <label className="form-label">
+                      Titre <span className="required">*</span>
+                    </label>
+                    <input
+                      type="text"
+                      className="form-input"
+                      placeholder="Ex: Nid-de-poule dangereux"
+                      value={formData.title}
+                      onChange={(e) =>
+                        setFormData({ ...formData, title: e.target.value })
+                      }
+                    />
+                  </div>
+                  <div className="form-group">
+                    <label className="form-label">
+                      Description <span className="required">*</span>
+                    </label>
+                    <textarea
+                      className="form-textarea"
+                      rows={3}
+                      placeholder="Donnez plus de détails..."
+                      value={formData.description}
+                      onChange={(e) =>
+                        setFormData({
+                          ...formData,
+                          description: e.target.value,
+                        })
+                      }
+                    />
+                  </div>
+                  <div className="form-group">
+                    <label className="form-label">
+                      Catégorie <span className="required">*</span>
+                    </label>
+                    <select
+                      className="form-select"
+                      value={formData.category_id}
+                      onChange={(e) =>
+                        setFormData({
+                          ...formData,
+                          category_id: e.target.value,
+                        })
+                      }
+                    >
+                      <option value="">Sélectionnez une catégorie</option>
+                      {categories.map((cat) => (
+                        <option key={cat.id} value={cat.id}>
+                          {cat.icon} {cat.name}
+                        </option>
+                      ))}
+                    </select>
+                  </div>
+                  <div className="form-group">
+                    <label className="form-label">Photo (Optionnel)</label>
+                    <div className="photo-upload-area">
+                      <input
+                        type="file"
+                        id="photo-upload"
+                        accept="image/*"
+                        onChange={handlePhotoChange}
+                        className="hidden-input"
+                      />
+                      <label htmlFor="photo-upload" className="upload-label">
+                        <Upload size={24} />
+                        <span>
+                          {formData.photo
+                            ? formData.photo.name
+                            : "Ajouter une photo"}
+                        </span>
+                      </label>
+                    </div>
+                  </div>
+
+                  {error && (
+                    <div className="error-message">
+                      <AlertCircle size={16} /> {error}
+                    </div>
+                  )}
+
+                  <button
+                    className="btn-submit"
+                    onClick={handleSubmit}
+                    disabled={loading}
+                  >
+                    {loading ? (
+                      <Loader className="animate-spin" size={20} />
+                    ) : (
+                      <CheckCircle size={20} />
+                    )}
+                    {loading ? "Envoi en cours..." : "Envoyer le Signalement"}
+                  </button>
+                </div>
+              )}
+            </>
+          )}
+        </div>
       </div>
     </div>
   );
@@ -8727,16 +9027,17 @@ export default AdminPanel;
 ============================================================
 FILE: frontend/src/pages/Dashboard/Dashboard.css
 ============================================================
-.dashboard {
-    max-width: 1200px;
-    margin: 0 auto;
+/* === Redesigned Dashboard Styles (Dashboard.css) === */
+
+.dashboard-v2 {
+    animation: fadeIn 0.5s ease-out;
 }
 
 .dashboard-header {
     display: flex;
     justify-content: space-between;
     align-items: center;
-    margin-bottom: 32px;
+    margin-bottom: 24px;
 }
 
 .page-title {
@@ -8745,64 +9046,162 @@ FILE: frontend/src/pages/Dashboard/Dashboard.css
     color: var(--text-primary);
 }
 
-.btn-primary {
+/* Re-using button style from Home for consistency */
+.btn-primary-solid {
     display: flex;
     align-items: center;
     gap: 8px;
-    background-color: var(--primary-color);
-    color: white;
-    border: none;
     padding: 10px 20px;
     border-radius: 8px;
     font-size: 14px;
-    font-weight: 500;
+    font-weight: 600;
     cursor: pointer;
-    transition: background-color 0.2s ease;
+    transition: all 0.2s ease;
+    border: none;
+    background: var(--primary-color);
+    color: white;
 }
 
-.btn-primary:hover {
-    background-color: var(--primary-hover);
+.btn-primary-solid:hover {
+    background: var(--primary-hover);
+    transform: translateY(-2px);
+    box-shadow: 0 4px 15px rgba(59, 130, 246, 0.2);
 }
 
-.stats-grid {
+.stats-grid-v2 {
     display: grid;
-    grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+    grid-template-columns: repeat(4, 1fr);
     gap: 24px;
-    margin-bottom: 48px;
+    margin-bottom: 32px;
 }
 
-.recent-incidents {
+/* Styles for StatsCard are in its own CSS file, but we can add overrides if needed */
+
+.dashboard-main-grid {
+    display: grid;
+    grid-template-columns: 1.5fr 1fr;
+    gap: 24px;
+}
+
+.chart-container,
+.recent-activity-container {
     background-color: var(--bg-primary);
-    border-radius: 12px;
-    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
-    overflow: hidden;
+    border: 1px solid var(--border-color);
+    border-radius: 16px;
+    padding: 24px;
+    box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.05);
 }
 
-.section-header {
-    padding: 24px;
-    border-bottom: 1px solid var(--border-color);
+.dark-mode .chart-container,
+.dark-mode .recent-activity-container {
+    box-shadow: none;
 }
 
 .section-title {
     font-size: 18px;
     font-weight: 600;
     color: var(--text-primary);
+    margin-bottom: 24px;
 }
 
-.incidents-list {
+/* --- Recent Activity Feed --- */
+.activity-feed {
     display: flex;
     flex-direction: column;
+    gap: 16px;
 }
 
-/* Responsive */
-@media (max-width: 768px) {
-    .dashboard-header {
-        flex-direction: column;
-        gap: 16px;
-        align-items: flex-start;
+.activity-item-v2 {
+    display: flex;
+    align-items: center;
+    gap: 16px;
+}
+
+.activity-icon {
+    flex-shrink: 0;
+    color: var(--text-secondary);
+}
+
+.activity-info {
+    flex-grow: 1;
+}
+
+.activity-title {
+    font-size: 14px;
+    font-weight: 500;
+    color: var(--text-primary);
+    margin-bottom: 2px;
+}
+
+.activity-meta {
+    font-size: 12px;
+    color: var(--text-secondary);
+}
+
+.activity-status-tag {
+    font-size: 12px;
+    font-weight: 600;
+    padding: 4px 10px;
+    border-radius: 16px;
+    white-space: nowrap;
+}
+
+.activity-status-tag.reçu {
+    background-color: #dbeafe;
+    color: #1e40af;
+}
+
+.activity-status-tag.en-cours {
+    background-color: #fef3c7;
+    color: #92400e;
+}
+
+.activity-status-tag.résolu {
+    background-color: #d1fae5;
+    color: #065f46;
+}
+
+.dark-mode .activity-status-tag.reçu {
+    background-color: rgba(59, 130, 246, 0.2);
+    color: #93bbfc;
+}
+
+.dark-mode .activity-status-tag.en-cours {
+    background-color: rgba(245, 158, 11, 0.2);
+    color: #fbbf24;
+}
+
+.dark-mode .activity-status-tag.résolu {
+    background-color: rgba(16, 185, 129, 0.2);
+    color: #6ee7b7;
+}
+
+.no-activity-info {
+    text-align: center;
+    padding: 40px 0;
+    color: var(--text-secondary);
+    font-size: 14px;
+}
+
+/* --- Responsive Design --- */
+@media (max-width: 1024px) {
+    .stats-grid-v2 {
+        grid-template-columns: 1fr 1fr;
     }
 
-    .stats-grid {
+    .dashboard-main-grid {
+        grid-template-columns: 1fr;
+    }
+}
+
+@media (max-width: 640px) {
+    .dashboard-header {
+        flex-direction: column;
+        align-items: flex-start;
+        gap: 16px;
+    }
+
+    .stats-grid-v2 {
         grid-template-columns: 1fr;
     }
 }
@@ -8810,80 +9209,169 @@ FILE: frontend/src/pages/Dashboard/Dashboard.css
 ============================================================
 FILE: frontend/src/pages/Dashboard/Dashboard.jsx
 ============================================================
-import React, { useState } from "react";
-import { Plus } from "lucide-react";
-import StatsCard from "../../components/StatsCard/StatsCard";
-import IncidentCard from "../../components/IncidentCard/IncidentCard";
-import IncidentForm from "../../components/IncidentForm/IncidentForm";
-import "./Dashboard.css";
+import React from "react";
+import {
+  BarChart,
+  Bar,
+  XAxis,
+  YAxis,
+  CartesianGrid,
+  Tooltip,
+  ResponsiveContainer,
+  Legend,
+} from "recharts";
+import { AlertCircle, Clock, CheckCircle, Activity, Plus } from "lucide-react";
+import StatsCard from "../../components/StatsCard/StatsCard"; // We'll reuse the stats card
+import "./Dashboard.css"; // We will create this new CSS file
 
-const Dashboard = ({ incidents, setIncidents }) => {
-  const [showIncidentForm, setShowIncidentForm] = useState(false);
+const Dashboard = ({ incidents, loading, error }) => {
+  // --- DATA PROCESSING ---
 
-  const stats = [
-    {
-      title: "Total Incidents",
-      value: incidents.length,
-      type: "total",
-      trend: "+12%",
-      trendUp: true,
-    },
-    {
-      title: "Nouveaux",
-      value: incidents.filter((i) => i.status === "Reçu").length,
-      type: "new",
-    },
-    {
-      title: "En cours",
-      value: incidents.filter((i) => i.status === "En cours").length,
-      type: "progress",
-    },
-    {
-      title: "Résolus",
-      value: incidents.filter((i) => i.status === "Résolu").length,
-      type: "resolved",
-    },
-  ];
+  // Calculate main statistics
+  const stats = {
+    total: incidents.length,
+    new: incidents.filter((i) => i.status === "Reçu").length,
+    inProgress: incidents.filter((i) => i.status === "En cours").length,
+    resolved: incidents.filter((i) => i.status === "Résolu").length,
+  };
+
+  // Process data for the bar chart
+  const getChartData = () => {
+    if (!incidents || incidents.length === 0) return [];
+
+    const categoryCounts = incidents.reduce((acc, incident) => {
+      const categoryName = incident.category?.name || "Non classé";
+      acc[categoryName] = (acc[categoryName] || 0) + 1;
+      return acc;
+    }, {});
+
+    return Object.entries(categoryCounts).map(([name, count]) => ({
+      name: name.split(" ")[0].replace("&", ""), // Shorten name for chart label
+      "Nombre d'incidents": count,
+    }));
+  };
+
+  const chartData = getChartData();
+  const recentIncidents = incidents.slice(0, 5);
+
+  // --- RENDER LOGIC ---
+
+  if (loading) {
+    return (
+      <div className="dashboard-loading">Chargement du tableau de bord...</div>
+    );
+  }
+
+  if (error) {
+    return <div className="dashboard-error">Erreur: {error}</div>;
+  }
 
   return (
-    <div className="dashboard">
+    <div className="dashboard-v2">
       <div className="dashboard-header">
-        <h2 className="page-title">Tableau de bord</h2>
-        <button
-          onClick={() => setShowIncidentForm(true)}
-          className="btn-primary"
-        >
+        <h1 className="page-title">Tableau de Bord</h1>
+        {/* <button onClick={onReportClick} className="btn-primary-solid">
           <Plus size={20} />
-          <span>Nouvel incident</span>
-        </button>
+          Signaler un Incident
+        </button> */}
       </div>
 
-      <div className="stats-grid">
-        {stats.map((stat, index) => (
-          <StatsCard key={index} {...stat} />
-        ))}
-      </div>
-
-      <div className="recent-incidents">
-        <div className="section-header">
-          <h3 className="section-title">Incidents récents</h3>
-        </div>
-        <div className="incidents-list">
-          {incidents.slice(0, 5).map((incident) => (
-            <IncidentCard key={incident.id} incident={incident} />
-          ))}
-        </div>
-      </div>
-
-      {showIncidentForm && (
-        <IncidentForm
-          onClose={() => setShowIncidentForm(false)}
-          onSubmit={(newIncident) => {
-            setIncidents([newIncident, ...incidents]);
-            setShowIncidentForm(false);
-          }}
+      {/* --- STATS CARDS --- */}
+      <div className="stats-grid-v2">
+        <StatsCard
+          title="Total des Incidents"
+          value={stats.total}
+          type="total"
         />
-      )}
+        <StatsCard title="Nouveaux Signalements" value={stats.new} type="new" />
+        <StatsCard
+          title="En Cours de Traitement"
+          value={stats.inProgress}
+          type="progress"
+        />
+        <StatsCard
+          title="Incidents Résolus"
+          value={stats.resolved}
+          type="resolved"
+        />
+      </div>
+
+      {/* --- MAIN CONTENT GRID (CHART & RECENT ACTIVITY) --- */}
+      <div className="dashboard-main-grid">
+        <div className="chart-container">
+          <h2 className="section-title">Incidents par Catégorie</h2>
+          <ResponsiveContainer width="100%" height={300}>
+            <BarChart
+              data={chartData}
+              margin={{ top: 5, right: 20, left: -10, bottom: 5 }}
+            >
+              <CartesianGrid
+                strokeDasharray="3 3"
+                stroke="var(--border-color)"
+              />
+              <XAxis
+                dataKey="name"
+                tick={{ fill: "var(--text-secondary)", fontSize: 12 }}
+              />
+              <YAxis
+                allowDecimals={false}
+                tick={{ fill: "var(--text-secondary)", fontSize: 12 }}
+              />
+              <Tooltip
+                cursor={{ fill: "rgba(59, 130, 246, 0.1)" }}
+                contentStyle={{
+                  backgroundColor: "var(--bg-primary)",
+                  borderColor: "var(--border-color)",
+                  borderRadius: "8px",
+                }}
+              />
+              <Legend wrapperStyle={{ fontSize: "14px" }} />
+              <Bar
+                dataKey="Nombre d'incidents"
+                fill="#3b82f6"
+                radius={[4, 4, 0, 0]}
+              />
+            </BarChart>
+          </ResponsiveContainer>
+        </div>
+
+        <div className="recent-activity-container">
+          <h2 className="section-title">Activité Récente</h2>
+          <div className="activity-feed">
+            {recentIncidents.length > 0 ? (
+              recentIncidents.map((incident) => (
+                <div key={incident.id} className="activity-item-v2">
+                  <div className="activity-icon">
+                    {incident.status === "Résolu" ? (
+                      <CheckCircle size={20} />
+                    ) : (
+                      <AlertCircle size={20} />
+                    )}
+                  </div>
+                  <div className="activity-info">
+                    <p className="activity-title">{incident.title}</p>
+                    <p className="activity-meta">
+                      Par {incident.user?.name || "Anonyme"} •{" "}
+                      {new Date(incident.created_at).toLocaleDateString(
+                        "fr-FR"
+                      )}
+                    </p>
+                  </div>
+                  <div
+                    className={`activity-status-tag ${incident.status
+                      .toLowerCase()
+                      .replace(" ", "-")}`}
+                  >
+                    {incident.status}
+                  </div>
+                </div>
+              ))
+            ) : (
+              <p className="no-activity-info">Aucune activité récente.</p>
+            )}
+          </div>
+        </div>
+      </div>
     </div>
   );
 };
@@ -8894,81 +9382,117 @@ export default Dashboard;
 ============================================================
 FILE: frontend/src/pages/Home/Home.css
 ============================================================
-.home-page {
-    max-width: 1400px;
-    margin: 0 auto;
-    padding-bottom: 60px;
+/* === Redesigned Home Page Styles (Home.css) === */
+
+/* --- Page Layout & Typography --- */
+.home-page-v2 {
+    padding: 24px;
+    animation: fadeIn 0.5s ease-out;
 }
 
-/* Hero Section */
-.hero-section {
+@keyframes fadeIn {
+    from {
+        opacity: 0;
+        transform: translateY(10px);
+    }
+
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+.section-title {
+    font-size: 24px;
+    font-weight: 600;
+    color: var(--text-primary);
+    margin-bottom: 24px;
+}
+
+/* --- Hero Section --- */
+.home-hero {
     display: grid;
     grid-template-columns: 1fr 1fr;
     gap: 60px;
     align-items: center;
-    margin-bottom: 80px;
-    min-height: 500px;
+    background-color: var(--bg-secondary);
+    padding: 48px;
+    border-radius: 20px;
+    margin-bottom: 32px;
+    overflow: hidden;
+    position: relative;
 }
 
-.hero-content {
-    max-width: 600px;
+.hero-text {
+    z-index: 2;
+}
+
+.hero-date {
+    font-size: 14px;
+    font-weight: 500;
+    color: var(--text-secondary);
+    margin-bottom: 8px;
 }
 
 .hero-title {
-    font-size: 48px;
+    font-size: 36px;
     font-weight: 700;
-    line-height: 1.2;
     color: var(--text-primary);
-    margin-bottom: 20px;
-}
-
-.hero-highlight {
-    background: linear-gradient(135deg, #3b82f6 0%, #8b5cf6 100%);
-    -webkit-background-clip: text;
-    -webkit-text-fill-color: transparent;
-    background-clip: text;
+    line-height: 1.2;
+    margin-bottom: 12px;
 }
 
 .hero-subtitle {
-    font-size: 20px;
+    font-size: 16px;
     color: var(--text-secondary);
-    line-height: 1.6;
-    margin-bottom: 40px;
+    max-width: 500px;
+    margin-bottom: 32px;
 }
 
-.hero-stats {
-    display: grid;
-    grid-template-columns: repeat(4, 1fr);
-    gap: 24px;
+.hero-cta-buttons {
+    display: flex;
+    gap: 16px;
 }
 
-.hero-stat {
-    text-align: center;
-    padding: 20px;
-    background-color: var(--bg-primary);
-    border-radius: 12px;
-    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
-    transition: transform 0.2s ease, box-shadow 0.2s ease;
+.btn-primary-solid,
+.btn-secondary-outline {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    padding: 12px 24px;
+    border-radius: 10px;
+    font-size: 15px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    border: 2px solid transparent;
 }
 
-.hero-stat:hover {
+.btn-primary-solid {
+    background: var(--primary-color);
+    color: white;
+}
+
+.btn-primary-solid:hover {
+    background: var(--primary-hover);
     transform: translateY(-2px);
-    box-shadow: 0 4px 16px rgba(0, 0, 0, 0.1);
+    box-shadow: 0 4px 15px rgba(59, 130, 246, 0.2);
 }
 
-.hero-stat-value {
-    font-size: 32px;
-    font-weight: 700;
+.btn-secondary-outline {
+    background: transparent;
+    border-color: var(--border-color);
+    color: var(--text-primary);
+}
+
+.btn-secondary-outline:hover {
+    background: var(--bg-primary);
+    border-color: var(--primary-color);
     color: var(--primary-color);
-    margin-bottom: 4px;
 }
 
-.hero-stat-label {
-    font-size: 14px;
-    color: var(--text-secondary);
-}
-
-/* Hero Visual */
+/* --- Hero Visual from previous version --- */
 .hero-visual {
     display: flex;
     justify-content: center;
@@ -9052,358 +9576,303 @@ FILE: frontend/src/pages/Home/Home.css
     }
 }
 
-/* Quick Actions */
-.quick-actions-section {
-    margin-bottom: 80px;
-}
-
-.section-title {
-    font-size: 32px;
-    font-weight: 700;
-    color: var(--text-primary);
-    margin-bottom: 40px;
-    text-align: center;
-}
-
-.quick-actions-grid {
+/* --- Stats Grid --- */
+.home-stats-grid {
     display: grid;
-    grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+    grid-template-columns: repeat(4, 1fr);
     gap: 24px;
+    margin-bottom: 32px;
 }
 
-.quick-action-card {
-    background-color: var(--bg-primary);
+.home-stat-card {
+    display: flex;
+    align-items: center;
+    gap: 16px;
+    background: var(--bg-primary);
+    padding: 20px;
+    border-radius: 12px;
     border: 1px solid var(--border-color);
-    border-radius: 16px;
-    padding: 32px;
-    text-align: left;
-    cursor: pointer;
-    transition: all 0.3s ease;
-    position: relative;
-    overflow: hidden;
+    transition: all 0.2s ease;
 }
 
-.quick-action-card::before {
-    content: '';
-    position: absolute;
-    top: 0;
-    left: 0;
-    right: 0;
-    height: 4px;
-    transition: height 0.3s ease;
-}
-
-.quick-action-card:hover {
+.home-stat-card:hover {
     transform: translateY(-4px);
-    box-shadow: 0 12px 24px rgba(0, 0, 0, 0.1);
+    box-shadow: 0 8px 20px rgba(0, 0, 0, 0.08);
+    border-color: var(--primary-color);
 }
 
-.quick-action-card:hover::before {
-    height: 100%;
-    opacity: 0.05;
+.dark-mode .home-stat-card:hover {
+    box-shadow: 0 8px 20px rgba(0, 0, 0, 0.2);
 }
 
-.action-red::before {
-    background-color: #ef4444;
-}
-
-.action-blue::before {
-    background-color: #3b82f6;
-}
-
-.action-yellow::before {
-    background-color: #f59e0b;
-}
-
-.action-green::before {
-    background-color: #10b981;
-}
-
-.quick-action-icon {
+.stat-icon-wrapper {
     width: 48px;
     height: 48px;
-    border-radius: 12px;
+    border-radius: 10px;
     display: flex;
     align-items: center;
     justify-content: center;
-    margin-bottom: 16px;
-}
-
-.action-red .quick-action-icon {
-    background-color: #fee2e2;
-    color: #dc2626;
-}
-
-.action-blue .quick-action-icon {
-    background-color: #dbeafe;
-    color: #3b82f6;
-}
-
-.action-yellow .quick-action-icon {
-    background-color: #fef3c7;
-    color: #f59e0b;
-}
-
-.action-green .quick-action-icon {
-    background-color: #d1fae5;
-    color: #10b981;
-}
-
-.quick-action-title {
-    font-size: 20px;
-    font-weight: 600;
-    color: var(--text-primary);
-    margin-bottom: 8px;
-}
-
-.quick-action-description {
-    font-size: 14px;
-    color: var(--text-secondary);
-    margin-bottom: 16px;
-}
-
-.quick-action-arrow {
-    position: absolute;
-    bottom: 32px;
-    right: 32px;
-    color: var(--text-secondary);
-    transition: transform 0.3s ease;
-}
-
-.quick-action-card:hover .quick-action-arrow {
-    transform: translateX(4px);
-}
-
-/* Features */
-.features-section {
-    margin-bottom: 80px;
-    background-color: var(--bg-secondary);
-    padding: 60px 40px;
-    border-radius: 24px;
-}
-
-.features-grid {
-    display: grid;
-    grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
-    gap: 40px;
-}
-
-.feature-card {
-    text-align: center;
-}
-
-.feature-icon-wrapper {
-    width: 80px;
-    height: 80px;
-    margin: 0 auto 24px;
-    background: linear-gradient(135deg, #3b82f6 0%, #8b5cf6 100%);
-    border-radius: 20px;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    box-shadow: 0 8px 20px rgba(59, 130, 246, 0.2);
-}
-
-.feature-icon {
-    width: 40px;
-    height: 40px;
     color: white;
 }
 
-.feature-title {
-    font-size: 24px;
+.stat-icon-wrapper.bg-blue {
+    background-color: #3b82f6;
+}
+
+.stat-icon-wrapper.bg-yellow {
+    background-color: #f59e0b;
+}
+
+.stat-icon-wrapper.bg-orange {
+    background-color: #f97316;
+}
+
+.stat-icon-wrapper.bg-green {
+    background-color: #10b981;
+}
+
+.stat-value {
+    font-size: 28px;
+    font-weight: 700;
+    color: var(--text-primary);
+}
+
+.stat-label {
+    font-size: 14px;
+    color: var(--text-secondary);
+}
+
+/* --- Main Content Area (Actions & Activity) --- */
+.home-main-content {
+    display: grid;
+    grid-template-columns: 1fr 1.5fr;
+    gap: 24px;
+}
+
+.quick-actions-container,
+.recent-activity-container {
+    background: var(--bg-primary);
+    border: 1px solid var(--border-color);
+    border-radius: 12px;
+    padding: 24px;
+}
+
+.actions-list {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+}
+
+.action-item {
+    display: flex;
+    align-items: center;
+    gap: 16px;
+    padding: 16px;
+    border-radius: 10px;
+    background: var(--bg-secondary);
+    border: none;
+    cursor: pointer;
+    text-align: left;
+    width: 100%;
+    transition: all 0.2s ease;
+}
+
+.action-item:hover {
+    background-color: var(--primary-color);
+    color: white;
+}
+
+.action-item:hover .action-icon-wrapper,
+.action-item:hover .action-title,
+.action-item:hover .action-description,
+.action-item:hover .action-arrow {
+    color: white;
+}
+
+.action-item:hover .action-icon-wrapper {
+    background-color: rgba(255, 255, 255, 0.1);
+}
+
+.action-icon-wrapper {
+    width: 40px;
+    height: 40px;
+    border-radius: 8px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background-color: var(--bg-primary);
+    color: var(--primary-color);
+    transition: all 0.2s ease;
+}
+
+.action-text {
+    flex: 1;
+}
+
+.action-title {
+    font-size: 15px;
     font-weight: 600;
     color: var(--text-primary);
-    margin-bottom: 12px;
+    transition: color 0.2s ease;
 }
 
-.feature-description {
-    font-size: 16px;
+.action-description {
+    font-size: 13px;
     color: var(--text-secondary);
-    line-height: 1.6;
+    transition: color 0.2s ease;
 }
 
-/* Activity Section */
-.activity-section {
-    margin-bottom: 40px;
+.action-arrow {
+    color: var(--text-secondary);
+    transition: color 0.2s ease, transform 0.2s ease;
 }
 
+.action-item:hover .action-arrow {
+    transform: translateX(4px);
+}
+
+/* --- Recent Activity --- */
 .activity-list {
-    background-color: var(--bg-primary);
-    border-radius: 16px;
-    overflow: hidden;
-    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
+    display: flex;
+    flex-direction: column;
 }
 
 .activity-item {
     display: flex;
     align-items: center;
-    gap: 24px;
-    padding: 20px 32px;
+    gap: 16px;
+    padding: 16px 0;
     border-bottom: 1px solid var(--border-color);
-    transition: background-color 0.2s ease;
 }
 
-.activity-item:hover {
-    background-color: var(--bg-secondary);
-}
-
-.activity-item:last-child {
+.activity-list .activity-item:last-child {
     border-bottom: none;
+    padding-bottom: 0;
 }
 
-.activity-time {
-    font-size: 14px;
-    color: var(--text-secondary);
-    font-weight: 500;
-    min-width: 60px;
+.activity-list .activity-item:first-child {
+    padding-top: 0;
 }
 
-.activity-content {
-    flex: 1;
+.activity-icon-wrapper {
+    width: 40px;
+    height: 40px;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
 }
 
-.activity-title {
-    font-size: 16px;
-    font-weight: 600;
-    color: var(--text-primary);
-    margin-bottom: 4px;
-}
-
-.activity-meta {
-    font-size: 14px;
-    color: var(--text-secondary);
-}
-
-.activity-status {
-    padding: 6px 16px;
-    border-radius: 20px;
-    font-size: 13px;
-    font-weight: 600;
-}
-
-/* Status classes for French status values */
-.status-new {
+.activity-icon-wrapper.status-new {
     background-color: #dbeafe;
     color: #1e40af;
 }
 
-.status-progress {
+.activity-icon-wrapper.status-progress {
     background-color: #fef3c7;
-    color: #d97706;
+    color: #92400e;
 }
 
-.status-resolved {
+.activity-icon-wrapper.status-resolved {
     background-color: #d1fae5;
     color: #065f46;
 }
 
-/* No activity message */
-.no-activity {
-    text-align: center;
-    padding: 60px 20px;
-    color: var(--text-secondary);
-}
-
-.no-activity p {
-    font-size: 16px;
-}
-
-/* Dark mode adjustments */
-.dark-mode .hero-stat {
-    background-color: var(--bg-secondary);
-}
-
-.dark-mode .quick-action-card {
-    background-color: var(--bg-secondary);
-}
-
-.dark-mode .action-red .quick-action-icon {
-    background-color: rgba(239, 68, 68, 0.2);
-}
-
-.dark-mode .action-blue .quick-action-icon {
-    background-color: rgba(59, 130, 246, 0.2);
-}
-
-.dark-mode .action-yellow .quick-action-icon {
-    background-color: rgba(245, 158, 11, 0.2);
-}
-
-.dark-mode .action-green .quick-action-icon {
-    background-color: rgba(16, 185, 129, 0.2);
-}
-
-.dark-mode .status-new {
+.dark-mode .activity-icon-wrapper.status-new {
     background-color: rgba(59, 130, 246, 0.2);
     color: #93bbfc;
 }
 
-.dark-mode .status-progress {
+.dark-mode .activity-icon-wrapper.status-progress {
     background-color: rgba(245, 158, 11, 0.2);
     color: #fbbf24;
 }
 
-.dark-mode .status-resolved {
+.dark-mode .activity-icon-wrapper.status-resolved {
     background-color: rgba(16, 185, 129, 0.2);
     color: #6ee7b7;
 }
 
-/* Responsive */
+.activity-details {
+    flex: 1;
+}
+
+.activity-title {
+    font-size: 15px;
+    font-weight: 500;
+    color: var(--text-primary);
+}
+
+.activity-meta {
+    font-size: 13px;
+    color: var(--text-secondary);
+}
+
+.activity-time {
+    font-size: 13px;
+    color: var(--text-secondary);
+    white-space: nowrap;
+}
+
+.no-activity-message {
+    text-align: center;
+    padding: 40px;
+    color: var(--text-secondary);
+}
+
+/* --- Responsive Design --- */
 @media (max-width: 1024px) {
-    .hero-section {
+    .home-hero {
         grid-template-columns: 1fr;
         text-align: center;
-        gap: 40px;
     }
 
-    .hero-content {
+    .hero-text {
         order: 2;
     }
 
     .hero-visual {
         order: 1;
+        margin-bottom: 32px;
     }
 
-    .hero-title {
-        font-size: 36px;
+    .hero-subtitle {
+        margin: 0 auto 32px;
     }
 
-    .hero-stats {
-        grid-template-columns: repeat(2, 1fr);
+    .hero-cta-buttons {
+        justify-content: center;
+    }
+
+    .home-stats-grid {
+        grid-template-columns: 1fr 1fr;
+    }
+
+    .home-main-content {
+        grid-template-columns: 1fr;
     }
 }
 
 @media (max-width: 640px) {
+    .home-page-v2 {
+        padding: 16px;
+    }
+
+    .home-hero {
+        padding: 32px;
+    }
+
     .hero-title {
         font-size: 28px;
     }
 
-    .hero-subtitle {
-        font-size: 16px;
-    }
-
-    .section-title {
-        font-size: 24px;
-    }
-
-    .quick-actions-grid {
-        grid-template-columns: 1fr;
-    }
-
-    .features-section {
-        padding: 40px 20px;
-    }
-
-    .activity-item {
+    .hero-cta-buttons {
         flex-direction: column;
-        align-items: flex-start;
-        gap: 12px;
-        padding: 16px 20px;
     }
 
-    .activity-time {
-        order: -1;
+    .home-stats-grid {
+        grid-template-columns: 1fr;
     }
 }
 
@@ -9414,83 +9883,48 @@ import React from "react";
 import {
   AlertCircle,
   BarChart3,
-  Clock,
-  Users,
-  TrendingUp,
+  Map,
+  FileText,
   ArrowRight,
   Shield,
-  Zap,
-  Activity,
+  CheckCircle,
+  Clock,
+  Users,
 } from "lucide-react";
+import { useAuth } from "../../hooks/useAuth";
 import "./Home.css";
 
-const Home = ({ setActiveView, incidents }) => {
-  // Calculer les statistiques avec les bonnes valeurs de statut
+// A small, reusable component for the stat cards
+const StatCard = ({ value, label, icon, colorClass }) => (
+  <div className="home-stat-card">
+    <div className={`stat-icon-wrapper ${colorClass}`}>{icon}</div>
+    <div className="stat-text">
+      <p className="stat-value">{value}</p>
+      <p className="stat-label">{label}</p>
+    </div>
+  </div>
+);
+
+const Home = ({ setActiveView, incidents, onReportClick }) => {
+  const { user } = useAuth();
+
+  // Calculate statistics from the incidents prop
   const stats = {
     total: incidents.length,
-    received: incidents.filter((i) => i.status === "Reçu").length,
-    inProgress: incidents.filter((i) => i.status === "En cours").length,
+    pending: incidents.filter((i) => !i.is_approved && !i.rejection_reason)
+      .length,
     resolved: incidents.filter((i) => i.status === "Résolu").length,
-    resolvedToday: incidents.filter((i) => {
-      const today = new Date().toDateString();
-      return (
-        i.status === "Résolu" && new Date(i.created_at).toDateString() === today
-      );
-    }).length,
+    inProgress: incidents.filter((i) => i.status === "En cours").length,
   };
 
-  const features = [
-    {
-      icon: <Shield className="feature-icon" />,
-      title: "Surveillance 24/7",
-      description:
-        "Monitoring continu de vos systèmes avec alertes en temps réel",
-    },
-    {
-      icon: <Zap className="feature-icon" />,
-      title: "Réponse Rapide",
-      description: "Temps de réponse moyen de moins de 5 minutes",
-    },
-    {
-      icon: <Activity className="feature-icon" />,
-      title: "Analyses Détaillées",
-      description:
-        "Tableaux de bord et rapports pour optimiser vos performances",
-    },
-  ];
+  // Format the current date for the header
+  const currentDate = new Date().toLocaleDateString("fr-FR", {
+    weekday: "long",
+    year: "numeric",
+    month: "long",
+    day: "numeric",
+  });
 
-  const quickActions = [
-    {
-      title: "Créer un incident",
-      description: "Signaler un nouveau problème",
-      icon: <AlertCircle />,
-      color: "action-red",
-      action: () => setActiveView("incidents"),
-    },
-    {
-      title: "Voir le tableau de bord",
-      description: "Analyser les performances",
-      icon: <BarChart3 />,
-      color: "action-blue",
-      action: () => setActiveView("dashboard"),
-    },
-    {
-      title: "Incidents en cours",
-      description: `${stats.inProgress} incidents actifs`,
-      icon: <Clock />,
-      color: "action-yellow",
-      action: () => setActiveView("incidents"),
-    },
-    {
-      title: "Équipe",
-      description: "Gérer les utilisateurs",
-      icon: <Users />,
-      color: "action-green",
-      action: () => setActiveView("users"),
-    },
-  ];
-
-  // Fonction pour obtenir la classe CSS du statut
   const getStatusClass = (status) => {
     switch (status) {
       case "Reçu":
@@ -9505,47 +9939,31 @@ const Home = ({ setActiveView, incidents }) => {
   };
 
   return (
-    <div className="home-page">
-      {/* Hero Section */}
-      <section className="hero-section">
-        <div className="hero-content">
-          <h1 className="hero-title">
-            Bienvenue dans votre
-            <span className="hero-highlight">
-              {" "}
-              Centre de Gestion des Incidents
-            </span>
-          </h1>
+    <div className="home-page-v2">
+      {/* === HERO SECTION === */}
+      <section className="home-hero">
+        <div className="hero-text">
+          <p className="hero-date">{currentDate}</p>
+          <h1 className="hero-title">Bonjour, {user?.name || "Citoyen"}!</h1>
           <p className="hero-subtitle">
-            Surveillez, gérez et résolvez les incidents de votre infrastructure
-            en temps réel
+            Ensemble, améliorons notre communauté. Que souhaitez-vous faire
+            aujourd'hui ?
           </p>
+          <div className="hero-cta-buttons">
+            <button className="btn-primary-solid" onClick={onReportClick}>
+              <AlertCircle size={20} />
+              Signaler un Incident
+            </button>
 
-          <div className="hero-stats">
-            <div className="hero-stat">
-              <div className="hero-stat-value">{stats.total}</div>
-              <div className="hero-stat-label">Incidents totaux</div>
-            </div>
-            <div className="hero-stat">
-              <div className="hero-stat-value">{stats.received}</div>
-              <div className="hero-stat-label">Nouveaux</div>
-            </div>
-            <div className="hero-stat">
-              <div className="hero-stat-value">{stats.resolvedToday}</div>
-              <div className="hero-stat-label">Résolus aujourd'hui</div>
-            </div>
-            <div className="hero-stat">
-              <div className="hero-stat-value">
-                {stats.total > 0
-                  ? Math.round((stats.resolved / stats.total) * 100)
-                  : 0}
-                %
-              </div>
-              <div className="hero-stat-label">Taux de résolution</div>
-            </div>
+            <button
+              className="btn-secondary-outline"
+              onClick={() => setActiveView("map")}
+            >
+              <Map size={20} />
+              Voir la Carte
+            </button>
           </div>
         </div>
-
         <div className="hero-visual">
           <div className="hero-animation">
             <div className="pulse-circle pulse-1"></div>
@@ -9558,74 +9976,124 @@ const Home = ({ setActiveView, incidents }) => {
         </div>
       </section>
 
-      {/* Quick Actions */}
-      <section className="quick-actions-section">
-        <h2 className="section-title">Actions rapides</h2>
-        <div className="quick-actions-grid">
-          {quickActions.map((action, index) => (
+      {/* === STATS GRID === */}
+      <section className="home-stats-grid">
+        <StatCard
+          value={stats.total}
+          label="Signalements Totaux"
+          icon={<BarChart3 size={24} />}
+          colorClass="bg-blue"
+        />
+        <StatCard
+          value={stats.pending}
+          label="En Attente"
+          icon={<Clock size={24} />}
+          colorClass="bg-yellow"
+        />
+        <StatCard
+          value={stats.inProgress}
+          label="En Cours"
+          icon={<Users size={24} />}
+          colorClass="bg-orange"
+        />
+        <StatCard
+          value={stats.resolved}
+          label="Résolus"
+          icon={<CheckCircle size={24} />}
+          colorClass="bg-green"
+        />
+      </section>
+
+      {/* === QUICK ACTIONS & RECENT ACTIVITY === */}
+      <section className="home-main-content">
+        <div className="quick-actions-container">
+          <h2 className="section-title">Accès Rapide</h2>
+          <div className="actions-list">
             <button
-              key={index}
-              className={`quick-action-card ${action.color}`}
-              onClick={action.action}
+              className="action-item"
+              onClick={() => setActiveView("my-incidents")}
             >
-              <div className="quick-action-icon">{action.icon}</div>
-              <h3 className="quick-action-title">{action.title}</h3>
-              <p className="quick-action-description">{action.description}</p>
-              <ArrowRight className="quick-action-arrow" size={20} />
+              <div className="action-icon-wrapper">
+                <FileText size={20} />
+              </div>
+              <div className="action-text">
+                <p className="action-title">Mes Signalements</p>
+                <p className="action-description">
+                  Voir l'historique de vos contributions
+                </p>
+              </div>
+              <ArrowRight className="action-arrow" size={20} />
             </button>
-          ))}
-        </div>
-      </section>
-
-      {/* Features */}
-      <section className="features-section">
-        <h2 className="section-title">Pourquoi choisir notre plateforme ?</h2>
-        <div className="features-grid">
-          {features.map((feature, index) => (
-            <div key={index} className="feature-card">
-              <div className="feature-icon-wrapper">{feature.icon}</div>
-              <h3 className="feature-title">{feature.title}</h3>
-              <p className="feature-description">{feature.description}</p>
-            </div>
-          ))}
-        </div>
-      </section>
-
-      {/* Recent Activity */}
-      <section className="activity-section">
-        <h2 className="section-title">Activité récente</h2>
-        <div className="activity-list">
-          {incidents.slice(0, 5).map((incident) => (
-            <div key={incident.id} className="activity-item">
-              <div className="activity-time">
-                {incident.created_at
-                  ? new Date(incident.created_at).toLocaleTimeString("fr-FR", {
-                      hour: "2-digit",
-                      minute: "2-digit",
-                    })
-                  : "N/A"}
+            <button
+              className="action-item"
+              onClick={() => setActiveView("dashboard")}
+            >
+              <div className="action-icon-wrapper">
+                <BarChart3 size={20} />
               </div>
-              <div className="activity-content">
-                <div className="activity-title">{incident.title}</div>
-                <div className="activity-meta">
-                  {incident.user?.name
-                    ? `Créé par ${incident.user.name}`
-                    : "Anonyme"}{" "}
-                  • {incident.category?.name || "Sans catégorie"}
+              <div className="action-text">
+                <p className="action-title">Tableau de Bord</p>
+                <p className="action-description">
+                  Analyser les statistiques globales
+                </p>
+              </div>
+              <ArrowRight className="action-arrow" size={20} />
+            </button>
+            <button
+              className="action-item"
+              onClick={() => setActiveView("incidents")}
+            >
+              <div className="action-icon-wrapper">
+                <AlertCircle size={20} />
+              </div>
+              <div className="action-text">
+                <p className="action-title">Tous les Incidents</p>
+                <p className="action-description">
+                  Explorer les signalements publics
+                </p>
+              </div>
+              <ArrowRight className="action-arrow" size={20} />
+            </button>
+          </div>
+        </div>
+        <div className="recent-activity-container">
+          <h2 className="section-title">Activité Récente</h2>
+          <div className="activity-list">
+            {incidents.length > 0 ? (
+              incidents.slice(0, 4).map((incident) => (
+                <div key={incident.id} className="activity-item">
+                  <div
+                    className={`activity-icon-wrapper ${getStatusClass(
+                      incident.status
+                    )}`}
+                  >
+                    {incident.status === "Résolu" ? (
+                      <CheckCircle size={20} />
+                    ) : (
+                      <AlertCircle size={20} />
+                    )}
+                  </div>
+                  <div className="activity-details">
+                    <p className="activity-title">{incident.title}</p>
+                    <p className="activity-meta">
+                      Par {incident.user?.name || "Anonyme"} •{" "}
+                      {incident.category?.name}
+                    </p>
+                  </div>
+                  <p className="activity-time">
+                    {new Date(incident.created_at).toLocaleDateString("fr-FR", {
+                      day: "2-digit",
+                      month: "short",
+                    })}
+                  </p>
                 </div>
+              ))
+            ) : (
+              <div className="no-activity-message">
+                <p>Aucune activité récente à afficher.</p>
               </div>
-              <div
-                className={`activity-status ${getStatusClass(incident.status)}`}
-              >
-                {incident.status}
-              </div>
-            </div>
-          ))}
-          {incidents.length === 0 && (
-            <div className="no-activity">
-              <p>Aucun incident récent</p>
-            </div>
-          )}
+            )}
+          </div>
         </div>
       </section>
     </div>
@@ -9798,21 +10266,17 @@ FILE: frontend/src/pages/Incidents/Incidents.jsx
 import React, { useState } from "react";
 import { Plus, Search } from "lucide-react";
 import IncidentCard from "../../components/IncidentCard/IncidentCard";
-import IncidentForm from "../../components/IncidentForm/IncidentForm";
 import "./Incidents.css";
 
-const Incidents = ({ incidents, setIncidents }) => {
-  const [showIncidentForm, setShowIncidentForm] = useState(false);
+const Incidents = ({ incidents, onViewDetails, loading, error }) => {
   const [searchTerm, setSearchTerm] = useState("");
   const [statusFilter, setStatusFilter] = useState("all");
   const [categoryFilter, setCategoryFilter] = useState("all");
 
-  // Extraire les catégories uniques
   const categories = [
     ...new Set(incidents.map((i) => i.category?.name).filter(Boolean)),
   ];
 
-  // Filtrer les incidents
   const filteredIncidents = incidents.filter((incident) => {
     const matchesSearch =
       incident.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
@@ -9821,7 +10285,6 @@ const Incidents = ({ incidents, setIncidents }) => {
       statusFilter === "all" || incident.status === statusFilter;
     const matchesCategory =
       categoryFilter === "all" || incident.category?.name === categoryFilter;
-
     return matchesSearch && matchesStatus && matchesCategory;
   });
 
@@ -9829,13 +10292,6 @@ const Incidents = ({ incidents, setIncidents }) => {
     <div className="incidents-page">
       <div className="page-header">
         <h2 className="page-title">Tous les incidents</h2>
-        <button
-          onClick={() => setShowIncidentForm(true)}
-          className="btn-primary"
-        >
-          <Plus size={20} />
-          <span>Nouvel incident</span>
-        </button>
       </div>
 
       <div className="filters-section">
@@ -9849,7 +10305,6 @@ const Incidents = ({ incidents, setIncidents }) => {
             className="search-input"
           />
         </div>
-
         <div className="filter-controls">
           <select
             value={statusFilter}
@@ -9861,7 +10316,6 @@ const Incidents = ({ incidents, setIncidents }) => {
             <option value="En cours">En cours</option>
             <option value="Résolu">Résolus</option>
           </select>
-
           <select
             value={categoryFilter}
             onChange={(e) => setCategoryFilter(e.target.value)}
@@ -9879,40 +10333,32 @@ const Incidents = ({ incidents, setIncidents }) => {
 
       <div className="incidents-container">
         <div className="incidents-count">
-          {filteredIncidents.length} incident
-          {filteredIncidents.length !== 1 ? "s" : ""} trouvé
+          {filteredIncidents.length} résultat
           {filteredIncidents.length !== 1 ? "s" : ""}
         </div>
-
         <div className="incidents-grid">
-          {filteredIncidents.length > 0 ? (
+          {loading ? (
+            <p>Chargement...</p>
+          ) : error ? (
+            <p>{error}</p>
+          ) : filteredIncidents.length > 0 ? (
             filteredIncidents.map((incident) => (
               <IncidentCard
                 key={incident.id}
                 incident={incident}
-                onClick={() => console.log("Incident clicked:", incident.id)}
+                onClick={() => onViewDetails(incident)}
               />
             ))
           ) : (
             <div className="no-results">
               <p className="no-results-text">Aucun incident trouvé</p>
               <p className="no-results-subtext">
-                Essayez de modifier vos critères de recherche
+                Essayez de modifier vos critères de recherche.
               </p>
             </div>
           )}
         </div>
       </div>
-
-      {showIncidentForm && (
-        <IncidentForm
-          onClose={() => setShowIncidentForm(false)}
-          onSubmit={(newIncident) => {
-            setIncidents([newIncident, ...incidents]);
-            setShowIncidentForm(false);
-          }}
-        />
-      )}
     </div>
   );
 };
@@ -10694,6 +11140,75 @@ export default LandingPage;
 
 
 ============================================================
+FILE: frontend/src/pages/Map/IncidentMap.jsx
+============================================================
+// frontend/src/pages/Map/IncidentMap.jsx
+
+import React from "react";
+import { MapContainer, TileLayer, Marker, Popup } from "react-leaflet";
+import "leaflet/dist/leaflet.css";
+import L from "leaflet";
+import markerIcon2x from "leaflet/dist/images/marker-icon-2x.png";
+import markerIcon from "leaflet/dist/images/marker-icon.png";
+import markerShadow from "leaflet/dist/images/marker-shadow.png";
+
+// Fix for default icon issue
+delete L.Icon.Default.prototype._getIconUrl;
+L.Icon.Default.mergeOptions({
+  iconRetinaUrl: markerIcon2x,
+  iconUrl: markerIcon,
+  shadowUrl: markerShadow,
+});
+
+const IncidentMap = ({ incidents }) => {
+  const initialPosition = [34.020882, -6.84165]; // Centered on Rabat
+
+  // Filter for incidents that have valid coordinates
+  const incidentsWithLocation = incidents.filter(
+    (incident) => incident.latitude && incident.longitude
+  );
+
+  return (
+    <div
+      className="map-container"
+      style={{
+        height: "calc(100vh - 110px)",
+        width: "100%",
+        borderRadius: "12px",
+        overflow: "hidden",
+      }}
+    >
+      <MapContainer
+        center={initialPosition}
+        zoom={13}
+        style={{ height: "100%", width: "100%" }}
+      >
+        <TileLayer
+          url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
+          attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
+        />
+
+        {incidentsWithLocation.map((incident) => (
+          <Marker
+            key={incident.id}
+            position={[incident.latitude, incident.longitude]}
+          >
+            <Popup>
+              <strong>{incident.title}</strong>
+              <p>{incident.category?.name || "Sans catégorie"}</p>
+              <small>Signalé par: {incident.user?.name || "Anonyme"}</small>
+            </Popup>
+          </Marker>
+        ))}
+      </MapContainer>
+    </div>
+  );
+};
+
+export default IncidentMap;
+
+
+============================================================
 FILE: frontend/src/pages/MyIncidents/MyIncidents.css
 ============================================================
 /* ---------- shared tokens (inherits from IncidentCard) ---------- */
@@ -11159,45 +11674,22 @@ import {
   AlertCircle,
   Eye,
   Calendar,
-  MapPin,
   RefreshCw,
 } from "lucide-react";
 import { useAuth } from "../../hooks/useAuth";
 import apiService from "../../services/apiService";
 import "./MyIncidents.css";
 
-const MyIncidents = () => {
+const MyIncidents = ({ onViewDetails }) => {
   const { user } = useAuth();
   const [incidents, setIncidents] = useState([]);
   const [loading, setLoading] = useState(true);
-  const [selectedIncident, setSelectedIncident] = useState(null);
   const [filter, setFilter] = useState("all");
 
-  useEffect(() => {
-    if (user) {
-      loadMyIncidents();
-    }
-  }, [user]);
-
-  // const loadMyIncidents = async () => {
-  //   try {
-  //     setLoading(true);
-  //     // Get all incidents and filter by current user
-  //     const allIncidents = await apiService.incidents.getAll();
-  //     const myIncidents = allIncidents.filter(
-  //       (incident) => incident.user_id === user.id
-  //     );
-  //     setIncidents(myIncidents);
-  //   } catch (error) {
-  //     console.error("Erreur lors du chargement des incidents:", error);
-  //   } finally {
-  //     setLoading(false);
-  //   }
-  // };
   const loadMyIncidents = async () => {
+    if (!user) return;
     try {
       setLoading(true);
-      // Call the new, optimized endpoint
       const myIncidents = await apiService.incidents.getMyIncidents();
       setIncidents(myIncidents);
     } catch (error) {
@@ -11207,33 +11699,12 @@ const MyIncidents = () => {
     }
   };
 
-  // const getStatusBadge = (incident) => {
-  //   if (incident.is_approved) {
-  //     return (
-  //       <div className="status-badge approved">
-  //         <CheckCircle size={16} />
-  //         <span>Approuvé</span>
-  //       </div>
-  //     );
-  //   } else if (incident.rejection_reason) {
-  //     return (
-  //       <div className="status-badge rejected">
-  //         <XCircle size={16} />
-  //         <span>Rejeté</span>
-  //       </div>
-  //     );
-  //   } else {
-  //     return (
-  //       <div className="status-badge pending">
-  //         <Clock size={16} />
-  //         <span>En attente d'approbation</span>
-  //       </div>
-  //     );
-  //   }
-  // };
+  useEffect(() => {
+    loadMyIncidents();
+  }, [user]);
 
-  const getStatusBadge = (status) => {
-    if (status === "Approved") {
+  const getStatusBadge = (incident) => {
+    if (incident.is_approved) {
       return (
         <div className="status-badge approved">
           <CheckCircle size={16} />
@@ -11241,7 +11712,7 @@ const MyIncidents = () => {
         </div>
       );
     }
-    if (status === "Rejected") {
+    if (incident.rejection_reason) {
       return (
         <div className="status-badge rejected">
           <XCircle size={16} />
@@ -11257,54 +11728,22 @@ const MyIncidents = () => {
     );
   };
 
-  const getIncidentStatus = (incident) => {
-    return (
-      <div
-        className={`incident-status ${incident.status
-          .toLowerCase()
-          .replace(" ", "-")}`}
-      >
-        {incident.status}
-      </div>
-    );
-  };
-
-  // const filteredIncidents = incidents.filter((incident) => {
-  //   if (filter === "all") return true;
-  //   if (filter === "pending")
-  //     return !incident.is_approved && !incident.rejection_reason;
-  //   if (filter === "approved") return incident.is_approved;
-  //   if (filter === "rejected") return !!incident.rejection_reason;
-  //   return true;
-  // });
   const filteredIncidents = incidents.filter((incident) => {
     if (filter === "all") return true;
-    return incident.status.toLowerCase() === filter; // 'pending' | 'approved' | 'rejected'
+    if (filter === "pending")
+      return !incident.is_approved && !incident.rejection_reason;
+    if (filter === "approved") return incident.is_approved;
+    if (filter === "rejected") return !!incident.rejection_reason;
+    return true;
   });
 
-  // const stats = {
-  //   total: incidents.length,
-  //   pending: incidents.filter((i) => !i.is_approved && !i.rejection_reason)
-  //     .length,
-  //   approved: incidents.filter((i) => i.is_approved).length,
-  //   rejected: incidents.filter((i) => !!i.rejection_reason).length,
-  // };
   const stats = {
     total: incidents.length,
-    pending: incidents.filter((i) => i.status === "Pending").length,
-    approved: incidents.filter((i) => i.status === "Approved").length,
-    rejected: incidents.filter((i) => i.status === "Rejected").length,
+    pending: incidents.filter((i) => !i.is_approved && !i.rejection_reason)
+      .length,
+    approved: incidents.filter((i) => i.is_approved).length,
+    rejected: incidents.filter((i) => !!i.rejection_reason).length,
   };
-
-  if (!user) {
-    return (
-      <div className="auth-required">
-        <AlertCircle size={48} />
-        <h3>Connexion requise</h3>
-        <p>Veuillez vous connecter pour voir vos incidents signalés.</p>
-      </div>
-    );
-  }
 
   return (
     <div className="my-incidents-page">
@@ -11315,65 +11754,16 @@ const MyIncidents = () => {
             Suivez l'état de vos incidents signalés
           </p>
         </div>
-        <button className="btn-refresh" onClick={loadMyIncidents}>
-          <RefreshCw size={20} />
+        <button
+          className="btn-refresh"
+          onClick={loadMyIncidents}
+          disabled={loading}
+        >
+          <RefreshCw size={16} className={loading ? "animate-spin" : ""} />{" "}
           Actualiser
         </button>
       </div>
 
-      {/* Statistiques */}
-      <div className="my-stats-grid">
-        <div className="my-stat-card">
-          <div className="stat-icon total">
-            <AlertCircle />
-          </div>
-          <div className="stat-content">
-            <div className="stat-value">{stats.total}</div>
-            <div className="stat-label">Total signalé</div>
-          </div>
-        </div>
-        <div className="my-stat-card">
-          <div className="stat-icon pending">
-            <Clock />
-          </div>
-          <div className="stat-content">
-            <div className="stat-value">{stats.pending}</div>
-            <div className="stat-label">En attente</div>
-          </div>
-        </div>
-        <div className="my-stat-card">
-          <div className="stat-icon approved">
-            <CheckCircle />
-          </div>
-          <div className="stat-content">
-            <div className="stat-value">{stats.approved}</div>
-            <div className="stat-label">Approuvés</div>
-          </div>
-        </div>
-        <div className="my-stat-card">
-          <div className="stat-icon rejected">
-            <XCircle />
-          </div>
-          <div className="stat-content">
-            <div className="stat-value">{stats.rejected}</div>
-            <div className="stat-label">Rejetés</div>
-          </div>
-        </div>
-      </div>
-
-      {/* Message d'information */}
-      {stats.pending > 0 && (
-        <div className="info-banner">
-          <AlertCircle size={20} />
-          <p>
-            Vous avez {stats.pending} signalement{stats.pending > 1 ? "s" : ""}{" "}
-            en attente d'approbation. Nos administrateurs examinent chaque
-            signalement dans les plus brefs délais.
-          </p>
-        </div>
-      )}
-
-      {/* Filtres */}
       <div className="filter-tabs">
         <button
           className={filter === "all" ? "active" : ""}
@@ -11401,27 +11791,18 @@ const MyIncidents = () => {
         </button>
       </div>
 
-      {/* Liste des incidents */}
       <div className="my-incidents-list">
         {loading ? (
           <div className="loading-state">
             <div className="loader"></div>
-            <p>Chargement de vos signalements...</p>
           </div>
         ) : filteredIncidents.length === 0 ? (
           <div className="empty-state">
             <AlertCircle size={48} />
-            <h3>Aucun signalement trouvé</h3>
+            <h3>Aucun signalement à afficher</h3>
             <p>
-              {filter === "all"
-                ? "Vous n'avez pas encore signalé d'incident."
-                : `Aucun signalement ${
-                    filter === "pending"
-                      ? "en attente"
-                      : filter === "approved"
-                      ? "approuvé"
-                      : "rejeté"
-                  }.`}
+              Vos signalements apparaîtront ici une fois que vous les aurez
+              créés.
             </p>
           </div>
         ) : (
@@ -11430,24 +11811,14 @@ const MyIncidents = () => {
               <div className="incident-card-header">
                 <div className="incident-main-info">
                   <h3>{incident.title}</h3>
-                  <p className="incident-description">
-                    {incident.description.length > 150
-                      ? incident.description.substring(0, 150) + "..."
-                      : incident.description}
-                  </p>
                 </div>
                 {getStatusBadge(incident)}
               </div>
-
               <div className="incident-meta">
                 <div className="meta-item">
                   <Calendar size={16} />
                   <span>
-                    {new Date(incident.created_at).toLocaleDateString("fr-FR", {
-                      day: "numeric",
-                      month: "long",
-                      year: "numeric",
-                    })}
+                    {new Date(incident.created_at).toLocaleDateString("fr-FR")}
                   </span>
                 </div>
                 <div className="meta-item">
@@ -11455,141 +11826,17 @@ const MyIncidents = () => {
                     {incident.category?.name || "Sans catégorie"}
                   </span>
                 </div>
-                {incident.is_approved && getIncidentStatus(incident)}
               </div>
-
-              {incident.rejection_reason && (
-                <div className="rejection-reason">
-                  <strong>Raison du rejet:</strong> {incident.rejection_reason}
-                </div>
-              )}
-
               <button
                 className="btn-view-details"
-                onClick={() => setSelectedIncident(incident)}
+                onClick={() => onViewDetails(incident)}
               >
-                <Eye size={16} />
-                Voir les détails
+                <Eye size={16} /> Voir les détails
               </button>
             </div>
           ))
         )}
       </div>
-
-      {/* Modal de détails */}
-      {selectedIncident && (
-        <div
-          className="modal-overlay"
-          onClick={() => setSelectedIncident(null)}
-        >
-          <div
-            className="incident-detail-modal"
-            onClick={(e) => e.stopPropagation()}
-          >
-            <div className="modal-header">
-              <h2>Détails du signalement</h2>
-              <button
-                className="modal-close"
-                onClick={() => setSelectedIncident(null)}
-              >
-                ×
-              </button>
-            </div>
-
-            <div className="modal-body">
-              {getStatusBadge(selectedIncident)}
-
-              <div className="detail-section">
-                <h3>{selectedIncident.title}</h3>
-                <p>{selectedIncident.description}</p>
-              </div>
-
-              <div className="detail-grid">
-                <div className="detail-item">
-                  <strong>Date de signalement:</strong>
-                  <span>
-                    {new Date(selectedIncident.created_at).toLocaleString(
-                      "fr-FR"
-                    )}
-                  </span>
-                </div>
-                <div className="detail-item">
-                  <strong>Catégorie:</strong>
-                  <span>
-                    {selectedIncident.category?.name || "Non catégorisé"}
-                  </span>
-                </div>
-                <div className="detail-item">
-                  <strong>Statut actuel:</strong>
-                  <span>{selectedIncident.status}</span>
-                </div>
-                <div className="detail-item">
-                  <strong>Localisation:</strong>
-                  <span>
-                    <MapPin
-                      size={16}
-                      style={{ display: "inline", marginRight: "4px" }}
-                    />
-                    Lat: {selectedIncident.latitude?.toFixed(6)}, Lng:{" "}
-                    {selectedIncident.longitude?.toFixed(6)}
-                  </span>
-                </div>
-              </div>
-
-              {selectedIncident.photo_path && (
-                <div className="detail-photo">
-                  <strong>Photo jointe:</strong>
-                  <img
-                    src={`http://localhost:8000/storage/${selectedIncident.photo_path}`}
-                    alt="Photo de l'incident"
-                  />
-                </div>
-              )}
-
-              {selectedIncident.rejection_reason && (
-                <div className="rejection-detail">
-                  <strong>Raison du rejet:</strong>
-                  <p>{selectedIncident.rejection_reason}</p>
-                  <small>
-                    Rejeté le{" "}
-                    {new Date(selectedIncident.approved_at).toLocaleDateString(
-                      "fr-FR"
-                    )}
-                  </small>
-                </div>
-              )}
-
-              {selectedIncident.is_approved && (
-                <div className="approval-detail">
-                  <CheckCircle size={20} />
-                  <p>
-                    Votre signalement a été approuvé et est maintenant visible
-                    publiquement.
-                  </p>
-                  <small>
-                    Approuvé le{" "}
-                    {new Date(selectedIncident.approved_at).toLocaleDateString(
-                      "fr-FR"
-                    )}
-                  </small>
-                </div>
-              )}
-
-              {!selectedIncident.is_approved &&
-                !selectedIncident.rejection_reason && (
-                  <div className="pending-detail">
-                    <Clock size={20} />
-                    <p>
-                      Votre signalement est en cours d'examen par nos
-                      administrateurs. Vous serez notifié dès qu'une décision
-                      sera prise.
-                    </p>
-                  </div>
-                )}
-            </div>
-          </div>
-        </div>
-      )}
     </div>
   );
 };
@@ -11964,6 +12211,35 @@ const incidents = {
         });
         return handleResponse(res);
     },
+    getAddressFromCoordinates: async ({ lat, lng }) => {
+        try {
+            const url = `https://nominatim.openstreetmap.org/reverse?format=json&lat=${lat}&lon=${lng}`;
+
+            const response = await fetch(url, {
+                headers: {
+                    'Accept': 'application/json',
+                    'User-Agent': 'Medinati360 Incident Reporting App' // Nominatim requires a User-Agent
+                }
+            });
+
+            if (!response.ok) {
+                throw new Error('Failed to fetch address from Nominatim');
+            }
+
+            const data = await response.json();
+
+            // The full address is in the 'display_name' property
+            return data.display_name || 'Adresse introuvable';
+
+        } catch (error) {
+            console.error("Error in reverse geocoding:", error);
+            return 'Impossible de déterminer l\'adresse';
+        }
+    },
+    getCategories: async () => {
+        const res = await fetch(`${API_BASE_URL}/categories`, { headers: getHeaders() });
+        return handleResponse(res);
+    },
     getMyIncidents: async () => {
         const res = await fetch(`${API_BASE_URL}/my-incidents`, { headers: getHeaders() });
         const data = await handleResponse(res);
@@ -11972,6 +12248,7 @@ const incidents = {
             is_approved: i.is_approved === true || i.is_approved === 1,
         }));
     },
+
 };
 
 // ------------------------------------------------------------------
@@ -12086,72 +12363,60 @@ import UserManagement from "./pages/UserManagement/UserManagement";
 import Auth from "./components/Auth/Auth";
 import { AuthProvider, useAuth } from "./hooks/useAuth";
 import LandingPage from "./pages/LandingPage/LandingPage";
+import IncidentMap from "./pages/Map/IncidentMap";
+import IncidentDetail from "./components/IncidentDetail/IncidentDetail";
 import apiService from "./services/apiService";
 import "./App.css";
 
-// Composant principal qui utilise le contexte d'authentification
+// This is the main component that renders when a user is logged in.
 function AppContent() {
   const { user, logout, isAuthenticated, loading: authLoading } = useAuth();
+
+  // --- STATE MANAGEMENT ---
   const [darkMode, setDarkMode] = useState(false);
   const [sidebarOpen, setSidebarOpen] = useState(true);
   const [activeView, setActiveView] = useState("home");
-  const [showReportForm, setShowReportForm] = useState(false);
-  const [showAuthModal, setShowAuthModal] = useState(false);
   const [incidents, setIncidents] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
 
-  const handleAuthSuccess = () => {
-    setShowAuthModal(false);
-    loadIncidents();
-    if (user?.role === "user") {
-      setShowReportForm(true);
-    }
-  };
+  // Modal States
+  const [showReportForm, setShowReportForm] = useState(false);
+  const [showAuthModal, setShowAuthModal] = useState(false);
+  const [selectedIncident, setSelectedIncident] = useState(null);
 
-  // Charger les incidents au démarrage
-  useEffect(() => {
-    loadIncidents();
-  }, []);
-
-  // Recharger les incidents quand l'utilisateur change
-  useEffect(() => {
-    if (user !== undefined) {
-      // user is loaded (either null or object)
-      loadIncidents();
-    }
-  }, [user]);
-
+  // --- DATA FETCHING ---
   const loadIncidents = async () => {
     if (!apiService.auth.isAuthenticated()) {
-      setIncidents([]); // Ensure incidents are empty for logged-out users
+      setIncidents([]);
       setLoading(false);
       return;
     }
     try {
       setLoading(true);
-      console.log("Loading incidents for authenticated user...");
       const data = await apiService.incidents.getAll();
-      console.log("Raw API response:", data);
       setIncidents(data);
-      console.log("Incidents set in state:", data.length);
     } catch (err) {
-      setError("Erreur lors du chargement des incidents");
+      setError("Erreur lors du chargement des incidents.");
       console.error("Erreur chargement incidents:", err);
     } finally {
       setLoading(false);
     }
   };
 
-  const handleReportIncident = async () => {
-    try {
-      // L'incident est créé via l'API dans ReportIncident
-      // On recharge juste la liste
-      await loadIncidents();
-      setShowReportForm(false);
-    } catch (err) {
-      console.error("Erreur création incident:", err);
-    }
+  // Load incidents on initial mount and when the user logs in/out
+  useEffect(() => {
+    loadIncidents();
+  }, [isAuthenticated]);
+
+  // --- EVENT HANDLERS ---
+  const handleAuthSuccess = () => {
+    setShowAuthModal(false);
+  };
+
+  const handleReportSuccess = () => {
+    setShowReportForm(false);
+    loadIncidents(); // Reload incidents to show the new one
   };
 
   const handleReportClick = () => {
@@ -12161,6 +12426,36 @@ function AppContent() {
       setShowAuthModal(true);
     }
   };
+
+  const handleLogout = () => {
+    logout();
+    setActiveView("home"); // Go to landing page after logout
+  };
+
+  const handleViewDetails = (incident) => {
+    setSelectedIncident(incident);
+  };
+
+  // --- DERIVED STATE (STATS) ---
+  const incidentStats = {
+    total: incidents.length,
+    pending: incidents.filter((i) => !i.is_approved && !i.rejection_reason)
+      .length,
+  };
+
+  // --- RENDER LOGIC ---
+
+  // Loading screen while checking authentication
+  if (authLoading) {
+    return (
+      <div className="loading-screen">
+        <div className="loader"></div>
+        <p>Chargement...</p>
+      </div>
+    );
+  }
+
+  // Show Landing Page if user is not authenticated
   if (!isAuthenticated) {
     return (
       <div className={`app ${darkMode ? "dark-mode" : ""}`}>
@@ -12175,48 +12470,85 @@ function AppContent() {
     );
   }
 
-  // const handleAuthSuccess = () => {
-  //   setShowAuthModal(false);
-  //   // Recharger les incidents après connexion
-  //   loadIncidents();
-  //   // Ouvrir le formulaire de signalement après connexion réussie si nécessaire
-  //   if (!user?.is_admin) {
-  //     setShowReportForm(true);
-  //   }
-  // };
-
-  const handleLogout = () => {
-    logout();
-    setActiveView("home");
-    // Recharger les incidents (pour ne montrer que les approuvés)
-    loadIncidents();
+  // This function ensures only ONE view is rendered at a time.
+  const renderActiveView = () => {
+    switch (activeView) {
+      case "home":
+        return (
+          <Home
+            incidents={incidents}
+            setActiveView={setActiveView}
+            onReportClick={handleReportClick}
+          />
+        );
+      case "dashboard":
+        return <Dashboard incidents={incidents} />;
+      case "incidents":
+        return (
+          <Incidents
+            incidents={incidents}
+            onViewDetails={handleViewDetails}
+            loading={loading}
+            error={error}
+          />
+        );
+      case "my-incidents":
+        return <MyIncidents onViewDetails={handleViewDetails} />;
+      case "admin":
+        if (user?.role === "admin" || user?.role === "superadmin")
+          return <AdminPanel />;
+        return (
+          <Home
+            incidents={incidents}
+            setActiveView={setActiveView}
+            onReportClick={handleReportClick}
+          />
+        );
+      case "user-management":
+        if (user?.role === "superadmin") return <UserManagement />;
+        return (
+          <Home
+            incidents={incidents}
+            setActiveView={setActiveView}
+            onReportClick={handleReportClick}
+          />
+        );
+      case "map":
+        return <IncidentMap incidents={incidents} />;
+      case "profile":
+        return (
+          <div className="profile-page">
+            <h2>Mon Profil</h2>
+            <div className="profile-card">
+              <p>
+                <strong>Nom:</strong> {user?.name}
+              </p>
+              <p>
+                <strong>Email:</strong> {user?.email}
+              </p>
+              <p>
+                <strong>Rôle:</strong>{" "}
+                <span style={{ textTransform: "capitalize" }}>
+                  {user?.role}
+                </span>
+              </p>
+              <p>
+                <strong>Membre depuis:</strong>{" "}
+                {new Date(user?.created_at).toLocaleDateString("fr-FR")}
+              </p>
+            </div>
+          </div>
+        );
+      default:
+        return (
+          <Home
+            incidents={incidents}
+            setActiveView={setActiveView}
+            onReportClick={handleReportClick}
+          />
+        );
+    }
   };
-
-  // Calculer les statistiques
-  const incidentStats = {
-    new: incidents.filter((i) => i.status === "Reçu").length,
-    inProgress: incidents.filter(
-      (i) => i.status === "En cours" || i.status === "Assigné"
-    ).length,
-    total: incidents.length,
-    // Stats supplémentaires pour admin
-    // pending: user?.is_admin
-    //   ? incidents.filter((i) => !i.is_approved && !i.rejection_reason).length
-    //   : 0,
-    pending:
-      user?.role === "admin" || user?.role === "superadmin"
-        ? incidents.filter((i) => !i.is_approved && !i.rejection_reason).length
-        : 0,
-  };
-
-  if (authLoading) {
-    return (
-      <div className="loading-screen">
-        <div className="loader"></div>
-        <p>Chargement...</p>
-      </div>
-    );
-  }
 
   return (
     <div className={`app ${darkMode ? "dark-mode" : ""}`}>
@@ -12225,11 +12557,9 @@ function AppContent() {
         setDarkMode={setDarkMode}
         sidebarOpen={sidebarOpen}
         setSidebarOpen={setSidebarOpen}
-        appName="Medinati360"
         onReportClick={handleReportClick}
         user={user}
         onLogout={handleLogout}
-        onLoginClick={() => setShowAuthModal(true)}
       />
       <div className="app-container">
         <Sidebar
@@ -12241,87 +12571,28 @@ function AppContent() {
           isAuthenticated={isAuthenticated}
         />
         <main className={`main-content ${sidebarOpen ? "sidebar-open" : ""}`}>
-          {activeView === "home" && (
-            <Home
-              incidents={incidents}
-              setActiveView={setActiveView}
-              onReportClick={handleReportClick}
-            />
-          )}
-          {activeView === "dashboard" && (
-            <Dashboard
-              incidents={incidents}
-              setIncidents={setIncidents}
-              onReportClick={handleReportClick}
-              loading={loading}
-              error={error}
-            />
-          )}
-          {activeView === "incidents" && (
-            <Incidents
-              incidents={incidents}
-              setIncidents={setIncidents}
-              onReportClick={handleReportClick}
-              loading={loading}
-              error={error}
-            />
-          )}
-          {activeView === "my-incidents" && isAuthenticated && <MyIncidents />}
-          {/* {activeView === "admin" && user?.is_admin && <AdminPanel />} */}
-          {activeView === "admin" &&
-            (user?.role === "admin" || user?.role === "superadmin") && (
-              <AdminPanel />
-            )}
-          {activeView === "user-management" && user?.role === "superadmin" && (
-            <UserManagement />
-          )}
-          {activeView === "map" && (
-            <div className="map-placeholder">
-              <h2>Carte des incidents</h2>
-              <p>Fonctionnalité bientôt disponible</p>
-              <p className="text-secondary">
-                Visualisez tous les incidents sur une carte interactive
-              </p>
-            </div>
-          )}
-          {activeView === "profile" && isAuthenticated && (
-            <div className="profile-page">
-              <h2>Mon Profil</h2>
-              <div className="profile-card">
-                <p>
-                  <strong>Nom:</strong> {user?.name}
-                </p>
-                <p>
-                  <strong>Email:</strong> {user?.email}
-                </p>
-                <p>
-                  <strong>Rôle:</strong>{" "}
-                  {user?.is_admin ? "Administrateur" : "Utilisateur"}
-                  <span style={{ textTransform: "capitalize" }}>
-                    {user?.role}
-                  </span>
-                </p>
-                <p>
-                  <strong>Membre depuis:</strong>{" "}
-                  {new Date(user?.created_at).toLocaleDateString("fr-FR")}
-                </p>
-              </div>
-            </div>
-          )}
+          {renderActiveView()}
         </main>
       </div>
 
+      {/* --- MODALS --- */}
       {showReportForm && (
         <ReportIncident
           onClose={() => setShowReportForm(false)}
-          onSuccess={handleReportIncident}
+          onSuccess={handleReportSuccess}
+        />
+      )}
+      {selectedIncident && (
+        <IncidentDetail
+          incident={selectedIncident}
+          onClose={() => setSelectedIncident(null)}
         />
       )}
     </div>
   );
 }
 
-// Composant App principal avec le Provider
+// The root component that provides the Auth context
 function App() {
   return (
     <AuthProvider>
@@ -12506,6 +12777,7 @@ FILE: frontend/package.json
     "react": "^19.1.0",
     "react-dom": "^19.1.0",
     "react-leaflet": "^5.0.0",
+    "recharts": "^3.1.0",
     "tailwind-merge": "^3.3.1",
     "tailwindcss-animate": "^1.0.7"
   },

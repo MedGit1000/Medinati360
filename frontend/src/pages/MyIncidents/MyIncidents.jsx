@@ -4,19 +4,26 @@ import {
   CheckCircle,
   XCircle,
   AlertCircle,
-  Eye,
+  Edit,
+  Trash2,
   Calendar,
   RefreshCw,
 } from "lucide-react";
 import { useAuth } from "../../hooks/useAuth";
 import apiService from "../../services/apiService";
+// We reuse the ReportIncident component for editing, as it's a very similar form
+import ReportIncident from "../../components/ReportIncident/ReportIncident";
 import "./MyIncidents.css";
 
-const MyIncidents = ({ onViewDetails }) => {
+const MyIncidents = () => {
   const { user } = useAuth();
   const [incidents, setIncidents] = useState([]);
   const [loading, setLoading] = useState(true);
   const [filter, setFilter] = useState("all");
+
+  // State for modals
+  const [editingIncident, setEditingIncident] = useState(null);
+  const [deletingIncident, setDeletingIncident] = useState(null);
 
   const loadMyIncidents = async () => {
     if (!user) return;
@@ -35,27 +42,40 @@ const MyIncidents = ({ onViewDetails }) => {
     loadMyIncidents();
   }, [user]);
 
+  const handleEditSuccess = () => {
+    setEditingIncident(null);
+    loadMyIncidents(); // Refresh list after editing
+  };
+
+  const handleConfirmDelete = async () => {
+    if (!deletingIncident) return;
+    try {
+      await apiService.incidents.delete(deletingIncident.id);
+      setDeletingIncident(null);
+      loadMyIncidents(); // Refresh list after deleting
+    } catch (error) {
+      alert("Erreur lors de la suppression: " + error.message);
+    }
+  };
+
   const getStatusBadge = (incident) => {
     if (incident.is_approved) {
       return (
         <div className="status-badge approved">
-          <CheckCircle size={16} />
-          <span>Approuvé</span>
+          <CheckCircle size={16} /> <span>Approuvé</span>
         </div>
       );
     }
     if (incident.rejection_reason) {
       return (
         <div className="status-badge rejected">
-          <XCircle size={16} />
-          <span>Rejeté</span>
+          <XCircle size={16} /> <span>Rejeté</span>
         </div>
       );
     }
     return (
       <div className="status-badge pending">
-        <Clock size={16} />
-        <span>En attente</span>
+        <Clock size={16} /> <span>En attente</span>
       </div>
     );
   };
@@ -83,7 +103,7 @@ const MyIncidents = ({ onViewDetails }) => {
         <div>
           <h1>Mes signalements</h1>
           <p className="page-subtitle">
-            Suivez l'état de vos incidents signalés
+            Suivez, modifiez ou supprimez vos incidents en attente.
           </p>
         </div>
         <button
@@ -132,43 +152,104 @@ const MyIncidents = ({ onViewDetails }) => {
           <div className="empty-state">
             <AlertCircle size={48} />
             <h3>Aucun signalement à afficher</h3>
-            <p>
-              Vos signalements apparaîtront ici une fois que vous les aurez
-              créés.
-            </p>
+            <p>Vos signalements apparaîtront ici.</p>
           </div>
         ) : (
-          filteredIncidents.map((incident) => (
-            <div key={incident.id} className="my-incident-card">
-              <div className="incident-card-header">
-                <div className="incident-main-info">
-                  <h3>{incident.title}</h3>
+          filteredIncidents.map((incident) => {
+            const isPending =
+              !incident.is_approved && !incident.rejection_reason;
+            return (
+              <div key={incident.id} className="my-incident-card">
+                <div className="incident-card-header">
+                  <div className="incident-main-info">
+                    <h3>{incident.title}</h3>
+                  </div>
+                  {getStatusBadge(incident)}
                 </div>
-                {getStatusBadge(incident)}
+                <div className="incident-meta">
+                  <div className="meta-item">
+                    <Calendar size={16} />
+                    <span>
+                      {new Date(incident.created_at).toLocaleDateString(
+                        "fr-FR"
+                      )}
+                    </span>
+                  </div>
+                  <div className="meta-item">
+                    <span className="category-tag">
+                      {incident.category?.name || "Sans catégorie"}
+                    </span>
+                  </div>
+                </div>
+
+                {isPending ? (
+                  <div className="incident-actions">
+                    <button
+                      className="btn-action btn-edit"
+                      onClick={() => setEditingIncident(incident)}
+                    >
+                      <Edit size={16} /> Modifier
+                    </button>
+                    <button
+                      className="btn-action btn-delete"
+                      onClick={() => setDeletingIncident(incident)}
+                    >
+                      <Trash2 size={16} /> Supprimer
+                    </button>
+                  </div>
+                ) : (
+                  <p className="review-status-text">
+                    Cet incident a été traité et ne peut plus être modifié.
+                  </p>
+                )}
               </div>
-              <div className="incident-meta">
-                <div className="meta-item">
-                  <Calendar size={16} />
-                  <span>
-                    {new Date(incident.created_at).toLocaleDateString("fr-FR")}
-                  </span>
-                </div>
-                <div className="meta-item">
-                  <span className="category-tag">
-                    {incident.category?.name || "Sans catégorie"}
-                  </span>
-                </div>
-              </div>
-              <button
-                className="btn-view-details"
-                onClick={() => onViewDetails(incident)}
-              >
-                <Eye size={16} /> Voir les détails
-              </button>
-            </div>
-          ))
+            );
+          })
         )}
       </div>
+
+      {/* Edit Incident Modal */}
+      {editingIncident && (
+        <ReportIncident
+          onClose={() => setEditingIncident(null)}
+          onSuccess={handleEditSuccess}
+          incidentToEdit={editingIncident} // Pass incident data to the form
+        />
+      )}
+
+      {/* Delete Confirmation Modal */}
+      {deletingIncident && (
+        <div
+          className="modal-overlay"
+          onClick={() => setDeletingIncident(null)}
+        >
+          <div className="modal" onClick={(e) => e.stopPropagation()}>
+            <h2>Confirmer la Suppression</h2>
+            <div className="modal-content">
+              <p>
+                Êtes-vous sûr de vouloir supprimer définitivement cet incident ?
+              </p>
+              <p>
+                <strong>{deletingIncident.title}</strong>
+              </p>
+            </div>
+            <div className="modal-actions">
+              <button
+                className="btn-cancel"
+                onClick={() => setDeletingIncident(null)}
+              >
+                Annuler
+              </button>
+              <button
+                className="btn-confirm-reject"
+                onClick={handleConfirmDelete}
+              >
+                Supprimer
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 };

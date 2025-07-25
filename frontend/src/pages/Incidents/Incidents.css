@@ -21,6 +21,54 @@
     flex-wrap: wrap;
 }
 
+.incident-actions {
+    display: flex;
+    gap: 12px;
+    margin-top: 16px;
+    border-top: 1px solid var(--border-color);
+    padding-top: 16px;
+}
+
+.btn-action {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 8px 16px;
+    border: none;
+    border-radius: 8px;
+    cursor: pointer;
+    font-size: 14px;
+    font-weight: 500;
+    transition: all 0.2s;
+}
+
+.btn-edit {
+    background-color: var(--bg-secondary);
+    color: var(--text-primary);
+    border: 1px solid var(--border-color);
+}
+
+.btn-edit:hover {
+    background-color: var(--border-color);
+}
+
+.btn-delete {
+    background: none;
+    color: var(--danger-color);
+}
+
+.btn-delete:hover {
+    background: var(--rejected-bg);
+}
+
+.review-status-text {
+    font-size: 13px;
+    color: var(--text-secondary);
+    padding-top: 16px;
+    margin-top: 16px;
+    border-top: 1px solid var(--border-color);
+}
+
 .search-box {
     position: relative;
     flex: 1;

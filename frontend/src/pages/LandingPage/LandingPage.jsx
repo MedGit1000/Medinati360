@@ -13,205 +13,256 @@ import {
   BarChart3,
   Users,
   ChevronDown,
+  Star,
+  Zap,
+  Globe,
+  Award,
+  Play,
+  Menu,
+  X,
+  Phone,
+  Mail,
+  Heart,
+  TrendingUp,
+  Eye,
+  MessageSquare,
 } from "lucide-react";
-import "./LandingPage.css";
-import logoImage from "../../assets/360_logo.png";
-import heroIllustration from "../../assets/smartcity.png"; // Make sure you have this image
+import "./LandingPage.css"; // Import your CSS styles
+
+// Mock logo - replace with your actual logo
+const LogoComponent = () => (
+  <div className="logo-placeholder">
+    <div className="logo-icon">
+      <Shield size={28} />
+    </div>
+    <span className="logo-text">Medinati360</span>
+  </div>
+);
 
 const FAQItem = ({ question, answer }) => {
   const [isOpen, setIsOpen] = useState(false);
   return (
-    <div className={`faq-item ${isOpen ? "active" : ""}`}>
-      <h3 onClick={() => setIsOpen(!isOpen)}>
-        <span className="faq-question-text">{question}</span>
-        <ChevronDown className="faq-toggle" />
-      </h3>
-      <div className="faq-content">
+    <div className={`modern-faq-item ${isOpen ? "active" : ""}`}>
+      <button className="faq-question" onClick={() => setIsOpen(!isOpen)}>
+        <span>{question}</span>
+        <ChevronDown className={`faq-icon ${isOpen ? "rotated" : ""}`} />
+      </button>
+      <div className="faq-answer">
         <p>{answer}</p>
       </div>
     </div>
   );
 };
 
+const FeatureCard = ({ icon, title, description, delay = 0 }) => (
+  <div className="feature-card-modern" style={{ animationDelay: `${delay}ms` }}>
+    <div className="feature-icon-wrapper">{icon}</div>
+    <h3>{title}</h3>
+    <p>{description}</p>
+  </div>
+);
+
+const TestimonialCard = ({ name, role, content, rating, avatar }) => (
+  <div className="testimonial-card-modern">
+    <div className="testimonial-header">
+      <div className="testimonial-avatar">{avatar || name[0]}</div>
+      <div className="testimonial-info">
+        <h4>{name}</h4>
+        <p>{role}</p>
+      </div>
+      <div className="testimonial-rating">
+        {[...Array(rating)].map((_, i) => (
+          <Star key={i} size={16} fill="currentColor" />
+        ))}
+      </div>
+    </div>
+    <p className="testimonial-content">"{content}"</p>
+  </div>
+);
+
+const StatCard = ({ number, label, icon }) => (
+  <div className="stat-card-modern">
+    <div className="stat-icon">{icon}</div>
+    <div className="stat-content">
+      <h3>{number}</h3>
+      <p>{label}</p>
+    </div>
+  </div>
+);
+
 const LandingPage = ({ onLoginClick }) => {
+  const [isMenuOpen, setIsMenuOpen] = useState(false);
+  const [scrolled, setScrolled] = useState(false);
+
   useEffect(() => {
     const handleScroll = () => {
-      const sections = document.querySelectorAll(".fade-in-section");
-      sections.forEach((section) => {
-        const rect = section.getBoundingClientRect();
-        if (rect.top < window.innerHeight * 0.8 && rect.bottom > 0) {
-          section.classList.add("is-visible");
+      setScrolled(window.scrollY > 50);
+
+      // Animate elements on scroll
+      const elements = document.querySelectorAll(".animate-on-scroll");
+      elements.forEach((element) => {
+        const elementTop = element.getBoundingClientRect().top;
+        const elementVisible = 150;
+
+        if (elementTop < window.innerHeight - elementVisible) {
+          element.classList.add("animated");
         }
       });
     };
-    window.addEventListener("scroll", handleScroll, { passive: true });
-    handleScroll();
+
+    window.addEventListener("scroll", handleScroll);
+    handleScroll(); // Initial check
+
     return () => window.removeEventListener("scroll", handleScroll);
   }, []);
 
-  return (
-    <div className="landing-page-wrapper-v2">
-      <header id="header" className="landing-header-v2">
-        <div className="header-container-v2">
-          <a href="#" className="logo">
-            <img src={logoImage} alt="Medinati360 Logo" />
-          </a>
+  const testimonials = [
+    {
+      name: "Amina Benali",
+      role: "Résidente de Casablanca",
+      content:
+        "Grâce à Medinati360, le problème d'éclairage dans ma rue a été résolu en une semaine. Interface très intuitive !",
+      rating: 5,
+    },
+    {
+      name: "Omar Tazi",
+      role: "Commerçant à Rabat",
+      content:
+        "Enfin une plateforme qui fonctionne ! Les autorités répondent rapidement et on peut suivre l'évolution en temps réel.",
+      rating: 5,
+    },
+    {
+      name: "Fatima El Amrani",
+      role: "Enseignante à Temara",
+      content:
+        "Une vraie révolution pour la participation citoyenne. Mes élèves utilisent aussi la plateforme pour leur quartier.",
+      rating: 5,
+    },
+  ];
 
-          <nav className="navmenu">
-            <ul>
-              <li>
-                <a href="#hero" className="active">
-                  Accueil
-                </a>
-              </li>
-              <li>
-                <a href="#about">Notre Mission</a>
-              </li>
-              <li>
-                <a href="#how-it-works">Processus</a>
-              </li>
-              <li>
-                <a href="#features">Fonctionnalités</a>
-              </li>
-              <li>
-                <a href="#faq">FAQ</a>
-              </li>
-            </ul>
+  return (
+    <div className="modern-landing">
+      {/* Header */}
+      <header className={`modern-header ${scrolled ? "scrolled" : ""}`}>
+        <div className="header-container">
+          <LogoComponent />
+
+          <nav className={`nav-menu ${isMenuOpen ? "open" : ""}`}>
+            <a href="#home" onClick={() => setIsMenuOpen(false)}>
+              Accueil
+            </a>
+            <a href="#about" onClick={() => setIsMenuOpen(false)}>
+              Mission
+            </a>
+            <a href="#how-it-works" onClick={() => setIsMenuOpen(false)}>
+              Processus
+            </a>
+            <a href="#features" onClick={() => setIsMenuOpen(false)}>
+              Fonctionnalités
+            </a>
+            <a href="#testimonials" onClick={() => setIsMenuOpen(false)}>
+              Témoignages
+            </a>
+            <a href="#faq" onClick={() => setIsMenuOpen(false)}>
+              FAQ
+            </a>
           </nav>
-          <div className="header-social-links">
-            <a href="#" className="twitter">
-              <Twitter size={18} />
-            </a>
-            <a href="#" className="facebook">
-              <Facebook size={18} />
-            </a>
-            <a href="#" className="instagram">
-              <Instagram size={18} />
-            </a>
+
+          <div className="header-actions">
+            <button className="btn-login" onClick={onLoginClick}>
+              Se connecter
+            </button>
+            <button
+              className="menu-toggle"
+              onClick={() => setIsMenuOpen(!isMenuOpen)}
+            >
+              {isMenuOpen ? <X size={24} /> : <Menu size={24} />}
+            </button>
           </div>
         </div>
       </header>
 
-      <main className="main">
-        <section id="hero" className="hero section">
-          <div className="container">
-            <div className="row align-items-center content">
-              <div className="col-lg-6">
-                <h2>Améliorez Votre Ville, Un Signalement à la Fois</h2>
-                <p className="lead">
-                  La plateforme citoyenne pour signaler, suivre et résoudre les
-                  incidents urbains. Ensemble, rendons nos villes meilleures.
-                </p>
-                <div className="cta-buttons">
-                  <button onClick={onLoginClick} className="btn btn-primary">
-                    Accéder à la Plateforme
-                  </button>
-                  <a href="#how-it-works" className="btn btn-outline">
-                    Comment ça marche
-                  </a>
-                </div>
-                <div className="hero-stats">
-                  <div className="stat-item">
-                    <span className="stat-number">10,000+</span>
-                    <span className="stat-label">Signalements Traités</span>
-                  </div>
-                  <div className="stat-item">
-                    <span className="stat-number">5+</span>
-                    <span className="stat-label">Villes Actives</span>
-                  </div>
-                  <div className="stat-item">
-                    <span className="stat-number">92%</span>
-                    <span className="stat-label">Taux de Satisfaction</span>
-                  </div>
-                </div>
+      {/* Hero Section */}
+      <section id="home" className="hero-modern">
+        <div className="hero-background">
+          <div className="hero-pattern"></div>
+          <div className="floating-shapes">
+            <div className="shape shape-1"></div>
+            <div className="shape shape-2"></div>
+            <div className="shape shape-3"></div>
+          </div>
+        </div>
+
+        <div className="hero-container">
+          <div className="hero-content">
+            <div className="hero-text animate-on-scroll">
+              <div className="hero-badge">
+                <Zap size={16} />
+                <span>Plateforme #1 au Maroc</span>
               </div>
-              <div className="col-lg-6">
-                <div className="hero-image">
-                  <img
-                    src={heroIllustration}
-                    alt="Illustration d'une ville intelligente"
-                    className="img-fluid"
-                  />
-                  <div className="shape-1"></div>
-                  <div className="shape-2"></div>
-                </div>
+              <h1>
+                Transformez Votre Ville,{" "}
+                <span className="gradient-text">Un Signalement à la Fois</span>
+              </h1>
+              <p className="hero-description">
+                La plateforme citoyenne intelligente qui connecte les résidents
+                aux autorités locales. Signalez, suivez et célébrez les
+                améliorations de votre quartier en temps réel.
+              </p>
+
+              <div className="hero-actions">
+                <button className="btn-primary-hero" onClick={onLoginClick}>
+                  <Play size={20} />
+                  Commencer maintenant
+                </button>
+                <button className="btn-secondary-hero">
+                  <Eye size={20} />
+                  Voir la démo
+                </button>
+              </div>
+
+              <div className="hero-stats-grid">
+                <StatCard
+                  number="15K+"
+                  label="Signalements traités"
+                  icon={<CheckCircle size={20} />}
+                />
+                <StatCard
+                  number="8 villes"
+                  label="Déjà connectées"
+                  icon={<MapPin size={20} />}
+                />
+                <StatCard
+                  number="96%"
+                  label="Satisfaction citoyenne"
+                  icon={<Heart size={20} />}
+                />
               </div>
             </div>
-          </div>
-        </section>
 
-        <section id="about" className="about section light-background">
-          <div className="container section-title">
-            <h2>Notre Mission</h2>
-            <p>
-              Créer un pont entre les citoyens et leur administration pour
-              construire des villes plus réactives, transparentes et agréables à
-              vivre.
-            </p>
-          </div>
-        </section>
-
-        <section id="how-it-works" className="resume section">
-          <div className="container section-title">
-            <h2>Le Processus de Résolution</h2>
-            <p>
-              De votre signalement à l'intervention, chaque étape est simple et
-              transparente.
-            </p>
-          </div>
-          <div className="container">
-            <div className="row">
-              <div className="col-12">
-                <div className="resume-wrapper">
-                  <div className="resume-block">
-                    <div className="timeline">
-                      <div className="timeline-item">
-                        <div className="timeline-left">
-                          <h4 className="company">Étape 1</h4>
+            <div className="hero-visual animate-on-scroll">
+              <div className="hero-mockup">
+                <div className="mockup-container">
+                  <div className="phone-mockup">
+                    <div className="phone-screen">
+                      <div className="app-interface">
+                        <div className="app-header">
+                          <div className="app-title">Medinati360</div>
+                          <div className="notification-badge">3</div>
                         </div>
-                        <div className="timeline-dot"></div>
-                        <div className="timeline-right">
-                          <h3 className="position">
-                            <Camera className="icon" /> Signalement Facile
-                          </h3>
-                          <p className="description">
-                            Prenez une photo, ajoutez une description et
-                            localisez le problème. Votre signalement est créé en
-                            moins d'une minute.
-                          </p>
+                        <div className="map-preview">
+                          <div className="map-pins">
+                            <div className="pin pin-1"></div>
+                            <div className="pin pin-2"></div>
+                            <div className="pin pin-3"></div>
+                          </div>
                         </div>
-                      </div>
-                      <div className="timeline-item">
-                        <div className="timeline-left">
-                          <h4 className="company">Étape 2</h4>
-                        </div>
-                        <div className="timeline-dot"></div>
-                        <div className="timeline-right">
-                          <h3 className="position">
-                            <Shield className="icon" /> Validation &
-                            Transmission
-                          </h3>
-                          <p className="description">
-                            Notre équipe de modération vérifie la validité du
-                            signalement avant de le transmettre instantanément
-                            au service municipal compétent.
-                          </p>
-                        </div>
-                      </div>
-                      <div className="timeline-item">
-                        <div className="timeline-left">
-                          <h4 className="company">Étape 3</h4>
-                        </div>
-                        <div className="timeline-dot"></div>
-                        <div className="timeline-right">
-                          <h3 className="position">
-                            <Clock className="icon" /> Suivi en Temps Réel
-                          </h3>
-                          <p className="description">
-                            Suivez l'état d'avancement de votre signalement
-                            (Reçu, En cours, Résolu) et recevez des
-                            notifications à chaque étape clé.
-                          </p>
+                        <div className="incident-card">
+                          <div className="incident-status resolved"></div>
+                          <div className="incident-info">
+                            <h4>Éclairage réparé</h4>
+                            <p>Rue Mohammed V</p>
+                          </div>
                         </div>
                       </div>
                     </div>
@@ -220,95 +271,306 @@ const LandingPage = ({ onLoginClick }) => {
               </div>
             </div>
           </div>
-        </section>
+        </div>
+      </section>
 
-        <section id="features" className="services section light-background">
-          <div className="container section-title">
-            <h2>Fonctionnalités Clés</h2>
-          </div>
-          <div className="container">
-            <div className="row g-4">
-              <div className="col-md-6">
-                <div className="service-item">
-                  <MapPin className="icon" />
-                  <h3>Cartographie Interactive</h3>
-                  <p>Visualisez tous les incidents sur une carte dynamique.</p>
-                </div>
-              </div>
-              <div className="col-md-6">
-                <div className="service-item">
-                  <BarChart3 className="icon" />
-                  <h3>Statistiques Publiques</h3>
-                  <p>
-                    Accédez à des données transparentes sur la performance des
-                    services.
-                  </p>
-                </div>
-              </div>
-              <div className="col-md-6">
-                <div className="service-item">
-                  <Users className="icon" />
-                  <h3>Profil Citoyen</h3>
-                  <p>Suivez l'historique et l'impact de vos contributions.</p>
-                </div>
-              </div>
-              <div className="col-md-6">
-                <div className="service-item">
-                  <CheckCircle className="icon" />
-                  <h3>Notifications Automatisées</h3>
-                  <p>Restez informé sans effort à chaque étape du processus.</p>
-                </div>
-              </div>
-            </div>
-          </div>
-        </section>
-
-        <section id="faq" className="faq section">
-          <div className="container section-title">
-            <h2>Questions Fréquemment Posées</h2>
-          </div>
-          <div className="container">
-            <div className="row justify-content-center">
-              <div className="col-lg-10">
-                <div className="faq-container">
-                  <FAQItem
-                    question="Est-ce que l'utilisation de Medinati360 est gratuite ?"
-                    answer="Oui, la plateforme est entièrement gratuite pour tous les citoyens. Notre mission est de faciliter la participation civique sans aucune barrière."
-                  />
-                  <FAQItem
-                    question="Mes données personnelles sont-elles en sécurité ?"
-                    answer="Absolument. Nous respectons les normes les plus strictes en matière de protection des données. Vos informations personnelles ne sont jamais partagées sans votre consentement."
-                  />
-                  <FAQItem
-                    question="Que se passe-t-il après que j'ai signalé un incident ?"
-                    answer="Une fois soumis, votre signalement est examiné par un modérateur, puis transmis au service municipal compétent. Vous pouvez suivre chaque étape de ce processus directement depuis votre compte."
-                  />
-                </div>
-              </div>
-            </div>
-          </div>
-        </section>
-      </main>
-
-      <footer id="footer" className="footer">
+      {/* About Section */}
+      <section id="about" className="about-modern animate-on-scroll">
         <div className="container">
-          <div className="copyright text-center">
+          <div className="about-content">
+            <div className="about-text">
+              <h2>Notre Mission</h2>
+              <p className="lead">
+                Créer un pont numérique entre les citoyens et leur
+                administration pour construire des villes plus réactives,
+                transparentes et agréables à vivre.
+              </p>
+              <div className="mission-points">
+                <div className="mission-point">
+                  <CheckCircle size={24} />
+                  <div>
+                    <h4>Transparence totale</h4>
+                    <p>Suivi en temps réel de chaque signalement</p>
+                  </div>
+                </div>
+                <div className="mission-point">
+                  <CheckCircle size={24} />
+                  <div>
+                    <h4>Efficacité garantie</h4>
+                    <p>Réduction de 60% du temps de traitement</p>
+                  </div>
+                </div>
+                <div className="mission-point">
+                  <CheckCircle size={24} />
+                  <div>
+                    <h4>Participation citoyenne</h4>
+                    <p>Donnez une voix à chaque résident</p>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      {/* How It Works */}
+      <section id="how-it-works" className="process-modern animate-on-scroll">
+        <div className="container">
+          <div className="section-header">
+            <h2>Un Processus Simple en 3 Étapes</h2>
             <p>
-              © <span>Copyright</span>{" "}
-              <strong className="px-1 sitename">Medinati360</strong>{" "}
-              <span>Tous droits réservés</span>
+              De votre signalement à la résolution, chaque étape est optimisée
+              pour l'efficacité
             </p>
           </div>
-          <div className="social-links d-flex justify-content-center">
-            <a href="">
-              <Twitter size={18} />
-            </a>
-            <a href="">
-              <Facebook size={18} />
-            </a>
-            <a href="">
-              <Instagram size={18} />
-            </a>
+
+          <div className="process-timeline">
+            <div className="timeline-item">
+              <div className="timeline-number">01</div>
+              <div className="timeline-content">
+                <div className="timeline-icon">
+                  <Camera size={32} />
+                </div>
+                <h3>Signalement Instantané</h3>
+                <p>
+                  Prenez une photo, ajoutez une description et géolocalisez le
+                  problème. Votre signalement est créé en moins de 30 secondes.
+                </p>
+                <div className="timeline-features">
+                  <span>📱 Interface intuitive</span>
+                  <span>📍 Géolocalisation automatique</span>
+                  <span>⚡ Validation instantanée</span>
+                </div>
+              </div>
+            </div>
+
+            <div className="timeline-item">
+              <div className="timeline-number">02</div>
+              <div className="timeline-content">
+                <div className="timeline-icon">
+                  <Shield size={32} />
+                </div>
+                <h3>Validation & Transmission</h3>
+                <p>
+                  Notre IA et notre équipe de modération vérifient la validité
+                  avant transmission automatique au service compétent.
+                </p>
+                <div className="timeline-features">
+                  <span>🤖 IA de validation</span>
+                  <span>⚡ Transmission instantanée</span>
+                  <span>🎯 Service approprié</span>
+                </div>
+              </div>
+            </div>
+
+            <div className="timeline-item">
+              <div className="timeline-number">03</div>
+              <div className="timeline-content">
+                <div className="timeline-icon">
+                  <TrendingUp size={32} />
+                </div>
+                <h3>Suivi & Résolution</h3>
+                <p>
+                  Suivez l'évolution en temps réel avec des notifications
+                  automatiques à chaque étape clé du processus.
+                </p>
+                <div className="timeline-features">
+                  <span>📊 Suivi en temps réel</span>
+                  <span>🔔 Notifications automatiques</span>
+                  <span>✅ Confirmation de résolution</span>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      {/* Features */}
+      <section id="features" className="features-modern animate-on-scroll">
+        <div className="container">
+          <div className="section-header">
+            <h2>Fonctionnalités Avancées</h2>
+            <p>
+              Des outils puissants pour une expérience citoyenne exceptionnelle
+            </p>
+          </div>
+
+          <div className="features-grid">
+            <FeatureCard
+              icon={<MapPin size={32} />}
+              title="Cartographie Interactive"
+              description="Visualisez tous les incidents sur une carte dynamique avec filtres avancés et données en temps réel."
+              delay={0}
+            />
+            <FeatureCard
+              icon={<BarChart3 size={32} />}
+              title="Analytics Publiques"
+              description="Accédez à des statistiques transparentes sur la performance des services municipaux."
+              delay={100}
+            />
+            <FeatureCard
+              icon={<Users size={32} />}
+              title="Profil Citoyen"
+              description="Suivez l'historique et l'impact de vos contributions avec un système de points et badges."
+              delay={200}
+            />
+            <FeatureCard
+              icon={<MessageSquare size={32} />}
+              title="Communication Directe"
+              description="Échangez directement avec les services municipaux via un système de messagerie intégré."
+              delay={300}
+            />
+            <FeatureCard
+              icon={<Award size={32} />}
+              title="Gamification"
+              description="Gagnez des récompenses et des reconnaissances pour votre engagement civique."
+              delay={400}
+            />
+            <FeatureCard
+              icon={<Globe size={32} />}
+              title="Multi-plateformes"
+              description="Accédez à tous vos signalements depuis le web, mobile iOS et Android."
+              delay={500}
+            />
+          </div>
+        </div>
+      </section>
+
+      {/* Testimonials */}
+      <section
+        id="testimonials"
+        className="testimonials-modern animate-on-scroll"
+      >
+        <div className="container">
+          <div className="section-header">
+            <h2>Ce Que Disent Nos Citoyens</h2>
+            <p>Plus de 50,000 utilisateurs actifs nous font confiance</p>
+          </div>
+
+          <div className="testimonials-grid">
+            {testimonials.map((testimonial, index) => (
+              <TestimonialCard key={index} {...testimonial} />
+            ))}
+          </div>
+        </div>
+      </section>
+
+      {/* FAQ */}
+      <section id="faq" className="faq-modern animate-on-scroll">
+        <div className="container">
+          <div className="section-header">
+            <h2>Questions Fréquemment Posées</h2>
+            <p>Tout ce que vous devez savoir sur Medinati360</p>
+          </div>
+
+          <div className="faq-container">
+            <FAQItem
+              question="Est-ce que l'utilisation de Medinati360 est gratuite ?"
+              answer="Oui, la plateforme est entièrement gratuite pour tous les citoyens. Notre mission est de faciliter la participation civique sans aucune barrière financière."
+            />
+            <FAQItem
+              question="Mes données personnelles sont-elles en sécurité ?"
+              answer="Absolument. Nous respectons les normes les plus strictes en matière de protection des données (RGPD). Vos informations personnelles ne sont jamais partagées sans votre consentement explicite."
+            />
+            <FAQItem
+              question="Que se passe-t-il après que j'ai signalé un incident ?"
+              answer="Votre signalement est d'abord validé par notre système IA puis par notre équipe. Une fois approuvé, il est automatiquement transmis au service municipal compétent. Vous recevez des notifications à chaque étape."
+            />
+            <FAQItem
+              question="Combien de temps faut-il pour qu'un incident soit résolu ?"
+              answer="Le délai varie selon le type d'incident et la ville. En moyenne, 70% des signalements sont traités dans les 7 jours. Vous pouvez suivre le progrès en temps réel sur votre tableau de bord."
+            />
+            <FAQItem
+              question="Puis-je signaler anonymement ?"
+              answer="Oui, vous pouvez choisir de faire un signalement anonyme. Cependant, créer un compte vous permet de suivre vos signalements et de gagner des points de reconnaissance."
+            />
+          </div>
+        </div>
+      </section>
+
+      {/* CTA Section */}
+      <section className="cta-modern animate-on-scroll">
+        <div className="container">
+          <div className="cta-content">
+            <h2>Prêt à Transformer Votre Ville ?</h2>
+            <p>
+              Rejoignez des milliers de citoyens engagés et faites la différence
+              dès aujourd'hui
+            </p>
+            <div className="cta-actions">
+              <button className="btn-cta-primary" onClick={onLoginClick}>
+                <Zap size={20} />
+                Commencer Gratuitement
+              </button>
+              <div className="cta-info">
+                <div className="info-item">
+                  <Phone size={16} />
+                  <span>+212 50293402</span>
+                </div>
+                <div className="info-item">
+                  <Mail size={16} />
+                  <span>contact@medinati360.ma</span>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      {/* Footer */}
+      <footer className="footer-modern">
+        <div className="container">
+          <div className="footer-content">
+            <div className="footer-section">
+              <LogoComponent />
+              <p>
+                La plateforme citoyenne qui transforme la façon dont nous
+                améliorons nos villes.
+              </p>
+              <div className="social-links">
+                <a href="#" aria-label="Twitter">
+                  <Twitter size={20} />
+                </a>
+                <a href="#" aria-label="Facebook">
+                  <Facebook size={20} />
+                </a>
+                <a href="#" aria-label="Instagram">
+                  <Instagram size={20} />
+                </a>
+                <a href="#" aria-label="LinkedIn">
+                  <Linkedin size={20} />
+                </a>
+              </div>
+            </div>
+
+            <div className="footer-section">
+              <h4>Produit</h4>
+              <a href="#features">Fonctionnalités</a>
+              <a href="#how-it-works">Comment ça marche</a>
+              <a href="#testimonials">Témoignages</a>
+              <a href="#faq">FAQ</a>
+            </div>
+
+            <div className="footer-section">
+              <h4>Société</h4>
+              <a href="#about">À propos</a>
+              <a href="#">Blog</a>
+              <a href="#">Carrières</a>
+              <a href="#">Contact</a>
+            </div>
+
+            <div className="footer-section">
+              <h4>Support</h4>
+              <a href="#">Centre d'aide</a>
+              <a href="#">Politique de confidentialité</a>
+              <a href="#">Conditions d'utilisation</a>
+              <a href="#">Status</a>
+            </div>
+          </div>
+
+          <div className="footer-bottom">
+            <p>© 2024 Medinati360. Tous droits réservés.</p>
+            <p>Fait avec ❤️ pour les citoyens marocains</p>
           </div>
         </div>
       </footer>

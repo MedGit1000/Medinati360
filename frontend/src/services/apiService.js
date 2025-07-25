@@ -212,6 +212,29 @@ const incidents = {
             is_approved: i.is_approved === true || i.is_approved === 1,
         }));
     },
+    update: async (id, payload) => {
+        const fd = new FormData();
+        Object.entries(payload).forEach(([k, v]) => {
+            if (v !== null && v !== undefined) fd.append(k, v);
+        });
+        // We use POST with a _method field for full compatibility with file uploads.
+        fd.append('_method', 'PUT');
+
+        const res = await fetch(`${API_BASE_URL}/incidents/${id}`, {
+            method: 'POST', // Note: Still POST
+            headers: getHeaders(true), // isFormData = true
+            body: fd,
+        });
+        return handleResponse(res);
+    },
+
+    delete: async (id) => {
+        const res = await fetch(`${API_BASE_URL}/incidents/${id}`, {
+            method: 'DELETE',
+            headers: getHeaders(),
+        });
+        return handleResponse(res);
+    },
 
 };
 

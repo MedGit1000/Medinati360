@@ -7,6 +7,7 @@ use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Log;
 use App\Http\Controllers\Controller;
 use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\Storage;
 use App\Notifications\IncidentStatusChanged;
 
 class IncidentController extends Controller
@@ -214,5 +215,68 @@ class IncidentController extends Controller
             Log::error('Error in myIncidents: ' . $e->getMessage());
             return response()->json(['error' => 'Server error'], 500);
         }
+    }
+    public function update(Request $request, Incident $incident)
+    {
+        // 1. Authorization Check
+        if ($request->user()->id !== $incident->user_id) {
+            return response()->json(['message' => 'Action non autorisée.'], 403);
+        }
+
+        // 2. Status Check: Can only edit if pending
+        if ($incident->is_approved || $incident->rejection_reason) {
+            return response()->json(['message' => 'Impossible de modifier un incident qui a déjà été examiné.'], 403);
+        }
+
+        // 3. Validation
+        $validatedData = $request->validate([
+            'title' => 'sometimes|required|string|max:255',
+            'description' => 'sometimes|required|string',
+            'category_id' => 'sometimes|required|exists:categories,id',
+            'latitude' => 'sometimes|required|numeric',
+            'longitude' => 'sometimes|required|numeric',
+            'photo' => 'nullable|image|max:5120', // 5MB max
+        ]);
+
+        // 4. Handle Photo Update
+        if ($request->hasFile('photo')) {
+            // Delete the old photo if it exists
+            if ($incident->photo_path) {
+                Storage::disk('public')->delete($incident->photo_path);
+            }
+            // Store the new photo
+            $validatedData['photo_path'] = $request->file('photo')->store('incidents', 'public');
+        }
+
+        // 5. Update Incident
+        $incident->update($validatedData);
+
+        return response()->json($incident);
+    }
+
+    /**
+     * Remove the specified resource from storage.
+     */
+    public function destroy(Request $request, Incident $incident)
+    {
+        // 1. Authorization Check
+        if ($request->user()->id !== $incident->user_id) {
+            return response()->json(['message' => 'Action non autorisée.'], 403);
+        }
+
+        // 2. Status Check: Can only delete if pending
+        if ($incident->is_approved || $incident->rejection_reason) {
+            return response()->json(['message' => 'Impossible de supprimer un incident qui a déjà été examiné.'], 403);
+        }
+
+        // 3. Delete Photo from Storage
+        if ($incident->photo_path) {
+            Storage::disk('public')->delete($incident->photo_path);
+        }
+
+        // 4. Delete Incident
+        $incident->delete();
+
+        return response()->noContent(); // 204 No Content
     }
 }

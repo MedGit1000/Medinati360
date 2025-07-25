@@ -1,130 +1,140 @@
-/* ---------- Design tokens ---------- */
-:root {
-    /* status colours */
-    --pending-bg: #fef3c7;
-    --pending-fg: #92400e;
-    --approved-bg: #d1fae5;
-    --approved-fg: #065f46;
-    --rejected-bg: #fee2e2;
-    --rejected-fg: #991b1b;
-}
+/* === Redesigned Incident Card Styles (IncidentCard.css) === */
 
-.dark-mode {
-    --pending-bg: rgba(245, 158, 11, 0.2);
-    --pending-fg: #fbbf24;
-    --approved-bg: rgba(16, 185, 129, 0.2);
-    --approved-fg: #6ee7b7;
-    --rejected-bg: rgba(239, 68, 68, 0.2);
-    --rejected-fg: #fca5a5;
-}
-
-/* ---------- Card shell ---------- */
-.incident-card {
-    padding: 20px 24px;
-    border-bottom: 1px solid var(--border-color);
+.incident-card-v2 {
+    background-color: var(--bg-primary);
+    border: 1px solid var(--border-color);
+    border-radius: 16px;
+    padding: 24px;
+    display: flex;
+    flex-direction: column;
     cursor: pointer;
-    transition: background-color 0.2s ease;
+    transition: all 0.2s ease-in-out;
+    box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.05);
 }
 
-.incident-card:hover {
+.incident-card-v2:hover {
+    transform: translateY(-4px);
+    box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1);
+    border-color: var(--primary-color);
+}
+
+.dark-mode .incident-card-v2 {
+    box-shadow: none;
+}
+
+.dark-mode .incident-card-v2:hover {
     background-color: var(--bg-secondary);
 }
 
-.incident-card:last-child {
-    border-bottom: none;
-}
-
-/* ---------- Header ---------- */
-.incident-card-header {
+.card-header {
     display: flex;
     justify-content: space-between;
-    align-items: flex-start;
-    gap: 16px;
-    margin-bottom: 12px;
+    align-items: center;
+    margin-bottom: 16px;
 }
 
-/* left-side column (icon + title + excerpt) */
-.incident-status {
+.card-category-icon {
+    width: 44px;
+    height: 44px;
+    border-radius: 10px;
     display: flex;
-    gap: 12px;
-    flex: 1;
+    align-items: center;
+    justify-content: center;
+    font-size: 20px;
+    background-color: var(--bg-secondary);
 }
 
-.status-icon {
-    width: 20px;
-    height: 20px;
-    margin-top: 2px;
-    flex-shrink: 0;
-}
-
-.status-icon.pending {
-    color: var(--pending-fg);
-}
-
-.status-icon.approved {
-    color: var(--approved-fg);
-}
-
-.status-icon.rejected {
-    color: var(--rejected-fg);
-}
-
-.incident-title {
-    font-size: 16px;
-    font-weight: 600;
-    color: var(--text-primary);
-    margin-bottom: 4px;
-}
-
-.incident-description {
-    font-size: 14px;
-    color: var(--text-secondary);
-    line-height: 1.5;
-}
-
-/* right-side badge */
-.status-badge {
-    padding: 4px 12px;
-    border-radius: 16px;
+.card-status-badge {
     font-size: 12px;
     font-weight: 600;
-    flex-shrink: 0;
+    padding: 6px 12px;
+    border-radius: 20px;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
 }
 
-.status-badge.pending {
-    background: var(--pending-bg);
-    color: var(--pending-fg);
+.card-status-badge.status-new {
+    background-color: #dbeafe;
+    color: #1e40af;
 }
 
-.status-badge.approved {
-    background: var(--approved-bg);
-    color: var(--approved-fg);
+.card-status-badge.status-progress {
+    background-color: #fef3c7;
+    color: #92400e;
 }
 
-.status-badge.rejected {
-    background: var(--rejected-bg);
-    color: var(--rejected-fg);
+.card-status-badge.status-resolved {
+    background-color: #d1fae5;
+    color: #065f46;
 }
 
-/* ---------- Footer meta ---------- */
-.incident-meta {
+.card-status-badge.status-default {
+    background-color: var(--bg-secondary);
+    color: var(--text-secondary);
+}
+
+.dark-mode .card-status-badge.status-new {
+    background-color: rgba(59, 130, 246, 0.2);
+    color: #93bbfc;
+}
+
+.dark-mode .card-status-badge.status-progress {
+    background-color: rgba(245, 158, 11, 0.2);
+    color: #fbbf24;
+}
+
+.dark-mode .card-status-badge.status-resolved {
+    background-color: rgba(16, 185, 129, 0.2);
+    color: #6ee7b7;
+}
+
+.card-body {
+    flex-grow: 1;
+}
+
+.card-title {
+    font-size: 18px;
+    font-weight: 600;
+    color: var(--text-primary);
+    margin-bottom: 8px;
+    line-height: 1.4;
+}
+
+.card-description {
+    font-size: 14px;
+    color: var(--text-secondary);
+    line-height: 1.6;
+    margin-bottom: 20px;
+}
+
+.card-footer {
     display: flex;
-    flex-wrap: wrap;
+    justify-content: space-between;
     align-items: center;
+    padding-top: 16px;
+    border-top: 1px solid var(--border-color);
+}
+
+.card-meta-info {
+    display: flex;
     gap: 16px;
+    align-items: center;
+}
+
+.meta-item {
+    display: flex;
+    align-items: center;
+    gap: 6px;
     font-size: 13px;
     color: var(--text-secondary);
 }
 
-.category-tag {
-    background: var(--bg-secondary);
-    padding: 2px 10px;
-    border-radius: 12px;
-    font-size: 12px;
-    font-weight: 500;
-    color: var(--text-primary);
+.card-action-icon {
+    color: var(--text-secondary);
+    transition: all 0.2s ease;
 }
 
-.dark-mode .category-tag {
-    background: rgba(255, 255, 255, 0.1);
+.incident-card-v2:hover .card-action-icon {
+    color: var(--primary-color);
+    transform: translateX(4px);
 }

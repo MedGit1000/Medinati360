@@ -59,6 +59,8 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::post('/incidents/{id}/reject',  [IncidentController::class, 'reject']);
     Route::put('/incidents/{id}/status',  [IncidentController::class, 'updateStatus']);
     Route::get('/my-incidents',           [IncidentController::class, 'myIncidents']);
+    Route::post('/incidents/{incident}',  [IncidentController::class, 'update']);
+    Route::delete('/incidents/{incident}', [IncidentController::class, 'destroy']);
 
     /* --- User information --- */
     Route::get('/user', fn(Request $request) => response()->json($request->user()));
