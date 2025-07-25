@@ -162,7 +162,12 @@ function AppContent() {
           />
         );
       case "map":
-        return <IncidentMap incidents={incidents} />;
+        return (
+          <IncidentMap
+            incidents={incidents}
+            onViewDetails={handleViewDetails}
+          />
+        );
       case "profile":
         return (
           <div className="profile-page">
