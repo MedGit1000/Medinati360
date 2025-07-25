@@ -22,18 +22,31 @@ import "./IncidentMap.css";
 // ... (no changes needed for these parts)
 const getCategoryConfig = (categoryName = "") => {
   const configs = {
+    // Infrastructure et Voirie
     Voirie: { icon: "🛣️", color: "#8B5CF6", name: "Voirie" },
     Trottoirs: { icon: "🚶‍♀️", color: "#06B6D4", name: "Trottoirs" },
     Éclairage: { icon: "💡", color: "#F59E0B", name: "Éclairage" },
+    Signalisation: { icon: "🚦", color: "#DC2626", name: "Signalisation" },
+    Mobilier: { icon: "🏦", color: "#6B7280", name: "Mobilier Urbain" },
+
+    // Environnement et Salubrité
     Déchets: { icon: "🗑️", color: "#EF4444", name: "Déchets" },
     "Espaces Verts": { icon: "🌳", color: "#10B981", name: "Espaces Verts" },
-    Nuisances: { icon: "🔊", color: "#F97316", name: "Nuisances" },
-    Eau: { icon: "💧", color: "#3B82F6", name: "Eau et Assainissement" },
-    Mobilier: { icon: "🏦", color: "#6B7280", name: "Mobilier Urbain" },
-    Transport: { icon: "🚎", color: "#EC4899", name: "Transport Public" },
-    Signalisation: { icon: "🚦", color: "#DC2626", name: "Signalisation" },
+    Pollution: { icon: "💨", color: "#F97316", name: "Pollution et Nuisances" }, // Updated
     Animaux: { icon: "🐕", color: "#92400E", name: "Animaux Errants" },
+
+    // Services Publics & Réseaux
+    Eau: { icon: "💧", color: "#3B82F6", name: "Eau et Assainissement" },
+    Transport: { icon: "🚎", color: "#EC4899", name: "Transport Public" },
+    Électrique: { icon: "⚡", color: "#FBBF24", name: "Panne Électrique" }, // New
+    Internet: { icon: "📶", color: "#38BDF8", name: "Panne Réseau" }, // New
+    Guichet: { icon: "🏧", color: "#22C55E", name: "GAB en Panne" }, // New
+    Postaux: { icon: "📮", color: "#E11D48", name: "Services Postaux" }, // New
+
+    // Constructions & Sécurité
     Bâtiments: { icon: "🏗️", color: "#7C3AED", name: "Constructions" },
+    Stationnement: { icon: "🅿️", color: "#475569", name: "Stationnement" }, // New
+    Vandalisme: { icon: "🎨", color: "#D946EF", name: "Vandalisme" }, // New
   };
   for (const [key, config] of Object.entries(configs)) {
     if (categoryName.includes(key)) return config;

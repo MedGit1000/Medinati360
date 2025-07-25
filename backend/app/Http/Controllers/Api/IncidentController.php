@@ -218,13 +218,18 @@ class IncidentController extends Controller
     }
     public function update(Request $request, Incident $incident)
     {
-        // 1. Authorization Check
-        if ($request->user()->id !== $incident->user_id) {
+        $user = $request->user();
+
+        // 1. Authorization Check: Allow if user is owner OR an admin/superadmin
+        $isOwner = $user->id === $incident->user_id;
+        $isAdmin = in_array($user->role, ['admin', 'superadmin']);
+
+        if (!$isOwner && !$isAdmin) {
             return response()->json(['message' => 'Action non autorisée.'], 403);
         }
 
-        // 2. Status Check: Can only edit if pending
-        if ($incident->is_approved || $incident->rejection_reason) {
+        // 2. Status Check: Regular users can only edit if pending. Admins can edit anytime.
+        if ($isOwner && !$isAdmin && ($incident->is_approved || $incident->rejection_reason)) {
             return response()->json(['message' => 'Impossible de modifier un incident qui a déjà été examiné.'], 403);
         }
 
@@ -259,13 +264,18 @@ class IncidentController extends Controller
      */
     public function destroy(Request $request, Incident $incident)
     {
-        // 1. Authorization Check
-        if ($request->user()->id !== $incident->user_id) {
+        $user = $request->user();
+
+        // 1. Authorization Check: Allow if user is owner OR an admin/superadmin
+        $isOwner = $user->id === $incident->user_id;
+        $isAdmin = in_array($user->role, ['admin', 'superadmin']);
+
+        if (!$isOwner && !$isAdmin) {
             return response()->json(['message' => 'Action non autorisée.'], 403);
         }
 
-        // 2. Status Check: Can only delete if pending
-        if ($incident->is_approved || $incident->rejection_reason) {
+        // 2. Status Check: Regular users can only delete if pending. Admins can delete anytime.
+        if ($isOwner && !$isAdmin && ($incident->is_approved || $incident->rejection_reason)) {
             return response()->json(['message' => 'Impossible de supprimer un incident qui a déjà été examiné.'], 403);
         }
 

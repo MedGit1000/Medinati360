@@ -175,7 +175,50 @@
     display: flex;
     gap: 12px;
     margin-top: 16px;
+    padding-top: 16px;
+    border-top: 1px solid var(--border-color);
 }
+
+/* NEW: Style for admin-specific actions */
+.admin-actions {
+    border-top: none;
+    /* No top border if it follows the other actions */
+    padding-top: 0;
+    margin-top: 12px;
+}
+
+.btn-action {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    padding: 8px 16px;
+    border: none;
+    border-radius: 8px;
+    cursor: pointer;
+    font-size: 14px;
+    font-weight: 500;
+    transition: all 0.2s;
+}
+
+.btn-edit {
+    background-color: var(--bg-secondary);
+    color: var(--text-primary);
+    border: 1px solid var(--border-color);
+}
+
+.btn-edit:hover {
+    background-color: var(--border-color);
+}
+
+.btn-delete {
+    background: none;
+    color: var(--danger-color);
+}
+
+.btn-delete:hover {
+    background: var(--rejected-bg);
+}
+
 
 .btn-approve,
 .btn-reject {

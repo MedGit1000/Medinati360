@@ -3,9 +3,9 @@ This digest is designed to be easily parsed by Large Language Models.
 
 --- SUMMARY ---
 Repository: Medinati360
-Files Analyzed: 131
-Total Text Size: 459.62 KB
-Estimated Tokens (text only): ~132.600
+Files Analyzed: 132
+Total Text Size: 511.04 KB
+Estimated Tokens (text only): ~146.440
 
 --- DIRECTORY STRUCTURE ---
 Medinati360/
@@ -174,6 +174,7 @@ Medinati360/
     │   │   │   ├── LandingPage.css
     │   │   │   └── LandingPage.jsx
     │   │   ├── Map/
+    │   │   │   ├── IncidentMap.css
     │   │   │   └── IncidentMap.jsx
     │   │   ├── MyIncidents/
     │   │   │   ├── MyIncidents.css
@@ -374,6 +375,7 @@ use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Log;
 use App\Http\Controllers\Controller;
 use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\Storage;
 use App\Notifications\IncidentStatusChanged;
 
 class IncidentController extends Controller
@@ -581,6 +583,69 @@ class IncidentController extends Controller
             Log::error('Error in myIncidents: ' . $e->getMessage());
             return response()->json(['error' => 'Server error'], 500);
         }
+    }
+    public function update(Request $request, Incident $incident)
+    {
+        // 1. Authorization Check
+        if ($request->user()->id !== $incident->user_id) {
+            return response()->json(['message' => 'Action non autorisée.'], 403);
+        }
+
+        // 2. Status Check: Can only edit if pending
+        if ($incident->is_approved || $incident->rejection_reason) {
+            return response()->json(['message' => 'Impossible de modifier un incident qui a déjà été examiné.'], 403);
+        }
+
+        // 3. Validation
+        $validatedData = $request->validate([
+            'title' => 'sometimes|required|string|max:255',
+            'description' => 'sometimes|required|string',
+            'category_id' => 'sometimes|required|exists:categories,id',
+            'latitude' => 'sometimes|required|numeric',
+            'longitude' => 'sometimes|required|numeric',
+            'photo' => 'nullable|image|max:5120', // 5MB max
+        ]);
+
+        // 4. Handle Photo Update
+        if ($request->hasFile('photo')) {
+            // Delete the old photo if it exists
+            if ($incident->photo_path) {
+                Storage::disk('public')->delete($incident->photo_path);
+            }
+            // Store the new photo
+            $validatedData['photo_path'] = $request->file('photo')->store('incidents', 'public');
+        }
+
+        // 5. Update Incident
+        $incident->update($validatedData);
+
+        return response()->json($incident);
+    }
+
+    /**
+     * Remove the specified resource from storage.
+     */
+    public function destroy(Request $request, Incident $incident)
+    {
+        // 1. Authorization Check
+        if ($request->user()->id !== $incident->user_id) {
+            return response()->json(['message' => 'Action non autorisée.'], 403);
+        }
+
+        // 2. Status Check: Can only delete if pending
+        if ($incident->is_approved || $incident->rejection_reason) {
+            return response()->json(['message' => 'Impossible de supprimer un incident qui a déjà été examiné.'], 403);
+        }
+
+        // 3. Delete Photo from Storage
+        if ($incident->photo_path) {
+            Storage::disk('public')->delete($incident->photo_path);
+        }
+
+        // 4. Delete Incident
+        $incident->delete();
+
+        return response()->noContent(); // 204 No Content
     }
 }
 
@@ -3120,19 +3185,32 @@ class CategorySeeder extends Seeder
     public function run(): void
     {
         $categories = [
-            ['name' => 'Voirie & Circulation', 'icon' => '🚗'],
-            ['name' => 'Propreté & Environnement', 'icon' => '🧹'],
+            // Groupe 1: Infrastructure et Voirie
+            ['name' => 'Voirie et Chaussée', 'icon' => '🛣️'],
+            ['name' => 'Trottoirs et Mobilité Piétonne', 'icon' => '🚶‍♀️'],
             ['name' => 'Éclairage Public', 'icon' => '💡'],
-            ['name' => 'Espaces Verts & Parcs', 'icon' => '🌳'],
-            ['name' => 'Sécurité & Ordre Public', 'icon' => '👮'],
-            ['name' => 'Services & Infrastructures', 'icon' => '💧'],
+
+            // Groupe 2: Environnement et Salubrité
+            ['name' => 'Gestion des Déchets', 'icon' => '🗑️'],
+            ['name' => 'Espaces Verts et Parcs', 'icon' => '🌳'],
+            ['name' => 'Nuisances', 'icon' => '🔊'],
+
+            // Groupe 3: Services et Équipements Publics
+            ['name' => 'Eau et Assainissement', 'icon' => '💧'],
+            ['name' => 'Mobilier Urbain et Équipements', 'icon' => '🏦'],
+            ['name' => 'Transport Public', 'icon' => '🚎'],
+
+            // Groupe 4: Sécurité et Vie Communautaire
+            ['name' => 'Signalisation et Sécurité Routière', 'icon' => '🚦'],
+            ['name' => 'Animaux Errants', 'icon' => '🐕'],
+            ['name' => 'Bâtiments et Constructions', 'icon' => '🏗️'],
         ];
 
         foreach ($categories as $category) {
-            // Utiliser updateOrCreate pour éviter les doublons
+            // Use updateOrCreate to avoid duplicates on re-seeding
             Category::updateOrCreate(
-                ['name' => $category['name']], // Condition de recherche
-                ['icon' => $category['icon']]  // Données à mettre à jour ou créer
+                ['name' => $category['name']], // Condition for finding the record
+                ['icon' => $category['icon']]  // Data to create or update with
             );
         }
     }
@@ -3639,6 +3717,8 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::post('/incidents/{id}/reject',  [IncidentController::class, 'reject']);
     Route::put('/incidents/{id}/status',  [IncidentController::class, 'updateStatus']);
     Route::get('/my-incidents',           [IncidentController::class, 'myIncidents']);
+    Route::post('/incidents/{incident}',  [IncidentController::class, 'update']);
+    Route::delete('/incidents/{incident}', [IncidentController::class, 'destroy']);
 
     /* --- User information --- */
     Route::get('/user', fn(Request $request) => response()->json($request->user()));
@@ -6147,9 +6227,10 @@ FILE: frontend/src/components/IncidentCard/IncidentCard.jsx
 ============================================================
 import React from "react";
 import { Clock, Eye } from "lucide-react";
+import "./IncidentCard.css";
 
-const EnhancedIncidentCard = ({ incident, onClick }) => {
-  // This safety check prevents crashes if incident data is temporarily unavailable.
+const IncidentCard = ({ incident, onClick }) => {
+  // Safety check to prevent crashes if incident data is missing
   if (!incident) {
     return null;
   }
@@ -6168,16 +6249,21 @@ const EnhancedIncidentCard = ({ incident, onClick }) => {
     }
   };
 
-  // Helper to get a representative emoji for each category
-  const getCategoryIcon = (categoryName) => {
-    if (!categoryName) return "📋";
+  // UPDATED: Helper to get a representative emoji for each new category
+  const getCategoryIcon = (categoryName = "") => {
     if (categoryName.includes("Voirie")) return "🛣️";
+    if (categoryName.includes("Trottoirs")) return "🚶‍♀️";
     if (categoryName.includes("Éclairage")) return "💡";
-    if (categoryName.includes("Propreté")) return "🧹";
+    if (categoryName.includes("Déchets")) return "🗑️";
     if (categoryName.includes("Espaces Verts")) return "🌳";
-    if (categoryName.includes("Sécurité")) return "🛡️";
-    if (categoryName.includes("Services")) return "🏢";
-    return "📋";
+    if (categoryName.includes("Nuisances")) return "🔊";
+    if (categoryName.includes("Eau")) return "💧";
+    if (categoryName.includes("Mobilier")) return "🏦";
+    if (categoryName.includes("Transport")) return "🚎";
+    if (categoryName.includes("Signalisation")) return "🚦";
+    if (categoryName.includes("Animaux")) return "🐕";
+    if (categoryName.includes("Bâtiments")) return "🏗️";
+    return "📋"; // Default icon
   };
 
   return (
@@ -6227,7 +6313,7 @@ const EnhancedIncidentCard = ({ incident, onClick }) => {
   );
 };
 
-export default EnhancedIncidentCard;
+export default IncidentCard;
 
 
 ============================================================
@@ -10129,6 +10215,54 @@ FILE: frontend/src/pages/Incidents/Incidents.css
     flex-wrap: wrap;
 }
 
+.incident-actions {
+    display: flex;
+    gap: 12px;
+    margin-top: 16px;
+    border-top: 1px solid var(--border-color);
+    padding-top: 16px;
+}
+
+.btn-action {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 8px 16px;
+    border: none;
+    border-radius: 8px;
+    cursor: pointer;
+    font-size: 14px;
+    font-weight: 500;
+    transition: all 0.2s;
+}
+
+.btn-edit {
+    background-color: var(--bg-secondary);
+    color: var(--text-primary);
+    border: 1px solid var(--border-color);
+}
+
+.btn-edit:hover {
+    background-color: var(--border-color);
+}
+
+.btn-delete {
+    background: none;
+    color: var(--danger-color);
+}
+
+.btn-delete:hover {
+    background: var(--rejected-bg);
+}
+
+.review-status-text {
+    font-size: 13px;
+    color: var(--text-secondary);
+    padding-top: 16px;
+    margin-top: 16px;
+    border-top: 1px solid var(--border-color);
+}
+
 .search-box {
     position: relative;
     flex: 1;
@@ -10263,101 +10397,290 @@ FILE: frontend/src/pages/Incidents/Incidents.css
 ============================================================
 FILE: frontend/src/pages/Incidents/Incidents.jsx
 ============================================================
-import React, { useState } from "react";
-import { Plus, Search } from "lucide-react";
-import IncidentCard from "../../components/IncidentCard/IncidentCard";
+import React, { useState, useMemo } from "react";
+import {
+  Plus,
+  Search,
+  X,
+  ServerCrash,
+  Filter,
+  BarChart3,
+  RefreshCw,
+  CheckCircle,
+  Clock,
+  AlertCircle,
+} from "lucide-react";
+import IncidentCard from "../../components/IncidentCard/IncidentCard"; // Updated import
 import "./Incidents.css";
 
-const Incidents = ({ incidents, onViewDetails, loading, error }) => {
+const Incidents = ({
+  incidents,
+  onViewDetails,
+  loading,
+  error,
+  onReportClick,
+}) => {
   const [searchTerm, setSearchTerm] = useState("");
   const [statusFilter, setStatusFilter] = useState("all");
   const [categoryFilter, setCategoryFilter] = useState("all");
+  const [showFilters, setShowFilters] = useState(false);
 
-  const categories = [
-    ...new Set(incidents.map((i) => i.category?.name).filter(Boolean)),
-  ];
+  // Derive categories from incident data for the filter dropdown
+  const categories = useMemo(
+    () => [...new Set(incidents.map((i) => i.category?.name).filter(Boolean))],
+    [incidents]
+  );
 
-  const filteredIncidents = incidents.filter((incident) => {
-    const matchesSearch =
-      incident.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      incident.description.toLowerCase().includes(searchTerm.toLowerCase());
-    const matchesStatus =
-      statusFilter === "all" || incident.status === statusFilter;
-    const matchesCategory =
-      categoryFilter === "all" || incident.category?.name === categoryFilter;
-    return matchesSearch && matchesStatus && matchesCategory;
-  });
+  // Memoize filtered incidents for better performance
+  const filteredIncidents = useMemo(
+    () =>
+      incidents.filter((incident) => {
+        const matchesSearch =
+          incident.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
+          incident.description.toLowerCase().includes(searchTerm.toLowerCase());
+        const matchesStatus =
+          statusFilter === "all" || incident.status === statusFilter;
+        const matchesCategory =
+          categoryFilter === "all" ||
+          incident.category?.name === categoryFilter;
+        return matchesSearch && matchesStatus && matchesCategory;
+      }),
+    [incidents, searchTerm, statusFilter, categoryFilter]
+  );
+
+  // Reset all filters to their default state
+  const resetFilters = () => {
+    setSearchTerm("");
+    setStatusFilter("all");
+    setCategoryFilter("all");
+  };
+
+  // Memoize statistics calculation
+  const stats = useMemo(() => {
+    const total = incidents.length;
+    const nouveau = incidents.filter((i) => i.status === "Reçu").length;
+    const enCours = incidents.filter((i) => i.status === "En cours").length;
+    const resolu = incidents.filter((i) => i.status === "Résolu").length;
+    return { total, nouveau, enCours, resolu };
+  }, [incidents]);
 
   return (
-    <div className="incidents-page">
-      <div className="page-header">
-        <h2 className="page-title">Tous les incidents</h2>
-      </div>
+    <div className="min-h-screen bg-gray-50 dark:bg-gray-900 text-gray-800 dark:text-gray-200 p-4 sm:p-6 lg:p-8">
+      {/* Header */}
+      <div className="max-w-7xl mx-auto">
+        <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center mb-8">
+          <div>
+            <h1 className="text-3xl font-bold text-gray-900 dark:text-white">
+              Gestion des Incidents
+            </h1>
+            <p className="mt-2 text-gray-600 dark:text-gray-400">
+              {filteredIncidents.length} incident
+              {filteredIncidents.length !== 1 ? "s" : ""} trouvé
+              {filteredIncidents.length !== 1 ? "s" : ""}
+              {filteredIncidents.length !== incidents.length &&
+                ` sur ${incidents.length} au total`}
+            </p>
+          </div>
+          <div className="flex gap-3 mt-4 sm:mt-0">
+            <button
+              onClick={() => setShowFilters(!showFilters)}
+              className="inline-flex items-center gap-2 px-4 py-2.5 border border-gray-300 dark:border-gray-600 rounded-lg text-gray-700 dark:text-gray-300 bg-white dark:bg-gray-800 hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors"
+            >
+              <Filter size={18} />
+              Filtres
+            </button>
+            <button
+              onClick={onReportClick}
+              className="inline-flex items-center gap-2 px-6 py-2.5 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors shadow-sm hover:shadow-md"
+            >
+              <Plus size={18} />
+              Nouveau Signalement
+            </button>
+          </div>
+        </div>
 
-      <div className="filters-section">
-        <div className="search-box">
-          <Search className="search-icon" size={20} />
-          <input
-            type="text"
-            placeholder="Rechercher un incident..."
-            value={searchTerm}
-            onChange={(e) => setSearchTerm(e.target.value)}
-            className="search-input"
-          />
+        {/* Stats Cards */}
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
+          {/* Stat Card: Total */}
+          <div className="bg-white dark:bg-gray-800 rounded-xl p-6 border border-gray-200 dark:border-gray-700">
+            <div className="flex items-center justify-between">
+              <div>
+                <p className="text-sm font-medium text-gray-600 dark:text-gray-400">
+                  Total
+                </p>
+                <p className="text-3xl font-bold text-gray-900 dark:text-white">
+                  {stats.total}
+                </p>
+              </div>
+              <div className="p-3 bg-blue-50 dark:bg-blue-900/50 rounded-lg">
+                <BarChart3 className="w-6 h-6 text-blue-600 dark:text-blue-400" />
+              </div>
+            </div>
+          </div>
+          {/* Stat Card: Nouveaux */}
+          <div className="bg-white dark:bg-gray-800 rounded-xl p-6 border border-gray-200 dark:border-gray-700">
+            <div className="flex items-center justify-between">
+              <div>
+                <p className="text-sm font-medium text-gray-600 dark:text-gray-400">
+                  Nouveaux
+                </p>
+                <p className="text-3xl font-bold text-blue-600 dark:text-blue-400">
+                  {stats.nouveau}
+                </p>
+              </div>
+              <div className="p-3 bg-blue-50 dark:bg-blue-900/50 rounded-lg">
+                <AlertCircle className="w-6 h-6 text-blue-600 dark:text-blue-400" />
+              </div>
+            </div>
+          </div>
+          {/* Stat Card: En Cours */}
+          <div className="bg-white dark:bg-gray-800 rounded-xl p-6 border border-gray-200 dark:border-gray-700">
+            <div className="flex items-center justify-between">
+              <div>
+                <p className="text-sm font-medium text-gray-600 dark:text-gray-400">
+                  En Cours
+                </p>
+                <p className="text-3xl font-bold text-amber-600 dark:text-amber-400">
+                  {stats.enCours}
+                </p>
+              </div>
+              <div className="p-3 bg-amber-50 dark:bg-amber-900/50 rounded-lg">
+                <RefreshCw className="w-6 h-6 text-amber-600 dark:text-amber-400" />
+              </div>
+            </div>
+          </div>
+          {/* Stat Card: Résolus */}
+          <div className="bg-white dark:bg-gray-800 rounded-xl p-6 border border-gray-200 dark:border-gray-700">
+            <div className="flex items-center justify-between">
+              <div>
+                <p className="text-sm font-medium text-gray-600 dark:text-gray-400">
+                  Résolus
+                </p>
+                <p className="text-3xl font-bold text-green-600 dark:text-green-400">
+                  {stats.resolu}
+                </p>
+              </div>
+              <div className="p-3 bg-green-50 dark:bg-green-900/50 rounded-lg">
+                <CheckCircle className="w-6 h-6 text-green-600 dark:text-green-400" />
+              </div>
+            </div>
+          </div>
         </div>
-        <div className="filter-controls">
-          <select
-            value={statusFilter}
-            onChange={(e) => setStatusFilter(e.target.value)}
-            className="filter-select"
-          >
-            <option value="all">Tous les statuts</option>
-            <option value="Reçu">Nouveaux</option>
-            <option value="En cours">En cours</option>
-            <option value="Résolu">Résolus</option>
-          </select>
-          <select
-            value={categoryFilter}
-            onChange={(e) => setCategoryFilter(e.target.value)}
-            className="filter-select"
-          >
-            <option value="all">Toutes les catégories</option>
-            {categories.map((category) => (
-              <option key={category} value={category}>
-                {category}
-              </option>
-            ))}
-          </select>
-        </div>
-      </div>
 
-      <div className="incidents-container">
-        <div className="incidents-count">
-          {filteredIncidents.length} résultat
-          {filteredIncidents.length !== 1 ? "s" : ""}
+        {/* Search and Filters */}
+        <div className="bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 p-6 mb-8">
+          <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+            <div className="lg:col-span-1">
+              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                Rechercher
+              </label>
+              <div className="relative">
+                <Search
+                  className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400"
+                  size={18}
+                />
+                <input
+                  type="text"
+                  placeholder="Par titre ou description..."
+                  value={searchTerm}
+                  onChange={(e) => setSearchTerm(e.target.value)}
+                  className="w-full pl-10 pr-4 py-3 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors"
+                />
+              </div>
+            </div>
+            {showFilters && (
+              <>
+                <div className="min-w-0">
+                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                    Statut
+                  </label>
+                  <select
+                    value={statusFilter}
+                    onChange={(e) => setStatusFilter(e.target.value)}
+                    className="w-full px-3 py-3 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors"
+                  >
+                    <option value="all">Tous les Statuts</option>
+                    <option value="Reçu">Nouveau</option>
+                    <option value="En cours">En Cours</option>
+                    <option value="Résolu">Résolu</option>
+                  </select>
+                </div>
+                <div className="min-w-0">
+                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                    Catégorie
+                  </label>
+                  <select
+                    value={categoryFilter}
+                    onChange={(e) => setCategoryFilter(e.target.value)}
+                    className="w-full px-3 py-3 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors"
+                  >
+                    <option value="all">Toutes les Catégories</option>
+                    {categories.map((category) => (
+                      <option key={category} value={category}>
+                        {category}
+                      </option>
+                    ))}
+                  </select>
+                </div>
+              </>
+            )}
+          </div>
+          {showFilters && (
+            <div className="mt-4 pt-4 border-t border-gray-200 dark:border-gray-700 flex justify-end">
+              <button
+                onClick={resetFilters}
+                className="inline-flex items-center gap-2 px-4 py-2 text-gray-700 dark:text-gray-300 border border-gray-300 dark:border-gray-600 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors"
+              >
+                <X size={16} /> Réinitialiser
+              </button>
+            </div>
+          )}
         </div>
-        <div className="incidents-grid">
-          {loading ? (
-            <p>Chargement...</p>
-          ) : error ? (
-            <p>{error}</p>
-          ) : filteredIncidents.length > 0 ? (
-            filteredIncidents.map((incident) => (
+
+        {/* Content */}
+        {loading ? (
+          <div className="flex items-center justify-center py-20">
+            <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600"></div>
+          </div>
+        ) : error ? (
+          <div className="bg-red-50 dark:bg-red-900/30 border border-red-200 dark:border-red-700 rounded-xl p-8 text-center">
+            <ServerCrash className="mx-auto h-12 w-12 text-red-400 mb-4" />
+            <h3 className="text-lg font-medium text-red-800 dark:text-red-300 mb-2">
+              Erreur de chargement
+            </h3>
+            <p className="text-red-600 dark:text-red-400">{error}</p>
+          </div>
+        ) : filteredIncidents.length > 0 ? (
+          <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-6">
+            {filteredIncidents.map((incident) => (
               <IncidentCard
                 key={incident.id}
                 incident={incident}
                 onClick={() => onViewDetails(incident)}
               />
-            ))
-          ) : (
-            <div className="no-results">
-              <p className="no-results-text">Aucun incident trouvé</p>
-              <p className="no-results-subtext">
-                Essayez de modifier vos critères de recherche.
-              </p>
+            ))}
+          </div>
+        ) : (
+          <div className="bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 p-12 text-center">
+            <div className="mx-auto w-24 h-24 bg-gray-100 dark:bg-gray-700 rounded-full flex items-center justify-center mb-6">
+              <Search className="w-10 h-10 text-gray-400" />
             </div>
-          )}
-        </div>
+            <h3 className="text-xl font-semibold text-gray-900 dark:text-white mb-2">
+              Aucun incident trouvé
+            </h3>
+            <p className="text-gray-600 dark:text-gray-400 mb-6">
+              Essayez d'ajuster vos critères de recherche ou créez un nouveau
+              signalement.
+            </p>
+            <button
+              onClick={onReportClick}
+              className="inline-flex items-center gap-2 px-6 py-3 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
+            >
+              <Plus size={18} />
+              Nouveau Signalement
+            </button>
+          </div>
+        )}
       </div>
     </div>
   );
@@ -10369,450 +10692,1145 @@ export default Incidents;
 ============================================================
 FILE: frontend/src/pages/LandingPage/LandingPage.css
 ============================================================
-/* === GLOBAL STYLES FOR LANDING PAGE === */
-:root {
-    --default-font: "Noto Sans", sans-serif;
-    --heading-font: "Questrial", sans-serif;
-    --nav-font: "Roboto", sans-serif;
-    --primary-color: #5846f9;
-    --secondary-color: #333;
-    --light-background: #f8f9fa;
+/* Reset and Base Styles */
+* {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
 }
 
-.landing-page-wrapper-v2 {
-    font-family: var(--default-font);
-    color: #6c757d;
+body {
+    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
+    line-height: 1.6;
+    color: #1a1a1a;
+    overflow-x: hidden;
 }
 
-a {
-    color: var(--primary-color);
-    text-decoration: none;
-    transition: 0.3s;
-}
-
-a:hover {
-    color: #7d71fc;
-    text-decoration: none;
-}
-
-h1,
-h2,
-h3,
-h4,
-h5,
-h6 {
-    font-family: var(--heading-font);
-    color: var(--secondary-color);
-}
-
-/* === HEADER / NAVBAR === */
-.landing-header-v2 {
-    height: 80px;
-    transition: all 0.5s;
-    z-index: 997;
-    background: #fff;
-    box-shadow: 0 2px 15px rgba(0, 0, 0, 0.05);
-    position: sticky;
-    top: 0;
-}
-
-.header-container-v2 {
+.container {
     max-width: 1200px;
     margin: 0 auto;
-    padding: 0 15px;
+    padding: 0 20px;
+}
+
+/* Logo Component */
+.logo-placeholder {
     display: flex;
     align-items: center;
-    justify-content: space-between;
-    height: 100%;
-}
-
-.logo h1 {
-    font-size: 28px;
+    gap: 12px;
     font-weight: 700;
-    color: var(--secondary-color);
+    font-size: 1.5rem;
+    color: #2563eb;
 }
 
-.logo img {
-    height: 150px;
-    /* Adjust the height as you see fit */
-    /* Adjust the height as you see fit */
-    width: auto;
-}
-
-.navmenu ul {
-    list-style: none;
+.logo-icon {
     display: flex;
-    gap: 30px;
-    margin: 0;
-}
-
-.navmenu a {
-    font-family: var(--nav-font);
-    font-size: 16px;
-    color: #6c757d;
-    font-weight: 500;
-    padding: 10px 0;
-    border-bottom: 2px solid transparent;
-    transition: 0.3s;
-}
-
-.navmenu a:hover,
-.navmenu .active {
-    color: var(--primary-color);
-    border-bottom-color: var(--primary-color);
-}
-
-.header-social-links {
-    display: flex;
-    gap: 15px;
-}
-
-.header-social-links a {
-    color: #6c757d;
-}
-
-/* === HERO SECTION === */
-.hero {
-    width: 100%;
-    min-height: 80vh;
-    padding: 120px 0;
-    background: #fff;
-}
-
-.hero .content {
-    text-align: left;
-}
-
-.hero h2 {
-    font-size: 48px;
-    font-weight: 700;
-    line-height: 1.2;
-    margin-bottom: 20px;
-}
-
-.hero .lead {
-    font-size: 18px;
-    color: #6c757d;
-    margin-bottom: 30px;
-}
-
-.btn {
-    padding: 12px 30px;
-    border-radius: 50px;
-    font-weight: 500;
-    transition: 0.3s;
-}
-
-.btn-primary {
-    background: var(--primary-color);
-    color: #fff;
-}
-
-.btn-primary:hover {
-    background: #4a39e4;
-}
-
-.btn-outline {
-    border: 2px solid var(--primary-color);
-    color: var(--primary-color);
-}
-
-.btn-outline:hover {
-    background: var(--primary-color);
-    color: #fff;
-}
-
-.cta-buttons {
-    display: flex;
-    gap: 15px;
-    margin-bottom: 40px;
-}
-
-.hero-stats {
-    display: flex;
-    gap: 30px;
-}
-
-.stat-item {
-    display: flex;
-    flex-direction: column;
-}
-
-.stat-number {
-    font-size: 36px;
-    font-weight: 700;
-    color: var(--secondary-color);
-}
-
-.stat-label {
-    font-size: 14px;
-    color: #6c757d;
-}
-
-.hero-image {
-    position: relative;
-}
-
-.hero-image img {
-    border-radius: 20px;
-}
-
-.hero-image .shape-1,
-.hero-image .shape-2 {
-    position: absolute;
-    background: var(--primary-color);
-    border-radius: 50%;
-    opacity: 0.1;
-    z-index: -1;
-}
-
-.hero-image .shape-1 {
-    width: 150px;
-    height: 150px;
-    top: -50px;
-    left: -50px;
-}
-
-.hero-image .shape-2 {
-    width: 100px;
-    height: 100px;
-    bottom: -30px;
-    right: -30px;
-}
-
-/* === SECTION STYLES === */
-.section {
-    padding: 80px 0;
-}
-
-.light-background {
-    background-color: var(--light-background);
-}
-
-.section-title {
-    text-align: center;
-    padding-bottom: 40px;
-}
-
-.section-title h2 {
-    font-size: 36px;
-    font-weight: 700;
-    margin-bottom: 15px;
-}
-
-.section-title p {
-    max-width: 600px;
-    margin: 0 auto;
-}
-
-/* === RESUME / HOW IT WORKS SECTION === */
-.resume-wrapper {
-    border-left: 2px solid var(--primary-color);
-}
-
-.resume-block {
-    padding-left: 30px;
-}
-
-.timeline-item {
-    position: relative;
-    padding-left: 40px;
-    padding-bottom: 40px;
-}
-
-.timeline-dot {
-    position: absolute;
-    left: -11px;
-    top: 5px;
-    width: 20px;
-    height: 20px;
-    border-radius: 50%;
-    background-color: #fff;
-    border: 2px solid var(--primary-color);
-}
-
-.timeline-left .company {
-    font-weight: 600;
-    color: var(--secondary-color);
-}
-
-.timeline-right .position {
-    font-size: 20px;
-    font-weight: 600;
-    margin-bottom: 10px;
-    display: flex;
-    align-items: center;
-    gap: 10px;
-}
-
-.timeline-right .icon {
-    color: var(--primary-color);
-}
-
-/* === SERVICES / FEATURES SECTION === */
-.service-item {
-    padding: 30px;
-    background: #fff;
-    border-radius: 10px;
-    box-shadow: 0 0 30px rgba(0, 0, 0, 0.08);
-    transition: 0.3s;
-    height: 100%;
-}
-
-.service-item:hover {
-    transform: translateY(-5px);
-    box-shadow: 0 5px 30px rgba(0, 0, 0, 0.1);
-}
-
-.service-item .icon {
-    font-size: 36px;
-    color: var(--primary-color);
-    margin-bottom: 20px;
-}
-
-.service-item h3 {
-    font-size: 20px;
-    font-weight: 700;
-    margin-bottom: 15px;
-}
-
-/* === FAQ SECTION === */
-.faq-container .faq-item {
-    position: relative;
-    padding: 20px;
-    margin-bottom: 10px;
-    background: #fff;
-    border-radius: 5px;
-    box-shadow: 0 2px 15px rgba(0, 0, 0, 0.05);
-}
-
-.faq-container .faq-item h3 {
-    font-size: 18px;
-    font-weight: 600;
-    cursor: pointer;
-    padding-right: 40px;
-}
-
-.faq-container .faq-toggle {
-    position: absolute;
-    top: 50%;
-    right: 20px;
-    transform: translateY(-50%);
-    transition: transform 0.3s;
-}
-
-.faq-container .faq-item.active .faq-toggle {
-    transform: translateY(-50%) rotate(90deg);
-}
-
-.faq-content {
-    max-height: 0;
-    overflow: hidden;
-    transition: max-height 0.3s ease-in-out;
-}
-
-.faq-item.active .faq-content {
-    max-height: 200px;
-    /* Adjust as needed */
-    padding-top: 15px;
-}
-
-/* === FOOTER === */
-.footer {
-    background: #fff;
-    padding: 40px 0;
-    box-shadow: 0 -2px 15px rgba(0, 0, 0, 0.05);
-}
-
-.footer .copyright {
-    margin-bottom: 15px;
-}
-
-.footer .social-links a {
-    display: inline-flex;
     align-items: center;
     justify-content: center;
     width: 40px;
     height: 40px;
+    background: linear-gradient(135deg, #3b82f6, #1d4ed8);
+    border-radius: 10px;
+    color: white;
+}
+
+.logo-text {
+    background: linear-gradient(135deg, #3b82f6, #1d4ed8);
+    -webkit-background-clip: text;
+    background-clip: text;
+    -webkit-text-fill-color: transparent;
+}
+
+/* Header */
+.modern-header {
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    z-index: 1000;
+    background: rgba(255, 255, 255, 0.95);
+    backdrop-filter: blur(20px);
+    border-bottom: 1px solid rgba(0, 0, 0, 0.1);
+    transition: all 0.3s ease;
+}
+
+.modern-header.scrolled {
+    background: rgba(255, 255, 255, 0.98);
+    box-shadow: 0 4px 20px rgba(0, 0, 0, 0.1);
+}
+
+.header-container {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 1rem 2rem;
+    max-width: 1200px;
+    margin: 0 auto;
+}
+
+.nav-menu {
+    display: flex;
+    gap: 2rem;
+    list-style: none;
+}
+
+.nav-menu a {
+    text-decoration: none;
+    color: #374151;
+    font-weight: 500;
+    transition: color 0.3s ease;
+    position: relative;
+}
+
+.nav-menu a:hover {
+    color: #3b82f6;
+}
+
+.nav-menu a::after {
+    content: '';
+    position: absolute;
+    bottom: -4px;
+    left: 0;
+    width: 0;
+    height: 2px;
+    background: #3b82f6;
+    transition: width 0.3s ease;
+}
+
+.nav-menu a:hover::after {
+    width: 100%;
+}
+
+.header-actions {
+    display: flex;
+    align-items: center;
+    gap: 1rem;
+}
+
+.btn-login {
+    padding: 0.75rem 1.5rem;
+    background: #3b82f6;
+    color: white;
+    border: none;
+    border-radius: 50px;
+    font-weight: 500;
+    cursor: pointer;
+    transition: all 0.3s ease;
+}
+
+.btn-login:hover {
+    background: #2563eb;
+    transform: translateY(-2px);
+}
+
+.menu-toggle {
+    display: none;
+    background: none;
+    border: none;
+    cursor: pointer;
+    color: #374151;
+}
+
+/* Hero Section */
+.hero-modern {
+    position: relative;
+    min-height: 100vh;
+    display: flex;
+    align-items: center;
+    overflow: hidden;
+    background: linear-gradient(135deg, #f8fafc 0%, #e2e8f0 100%);
+}
+
+.hero-background {
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    z-index: 1;
+}
+
+.hero-pattern {
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background-image: radial-gradient(circle at 2px 2px, rgba(59, 130, 246, 0.1) 1px, transparent 0);
+    background-size: 40px 40px;
+}
+
+.floating-shapes {
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+}
+
+.shape {
+    position: absolute;
     border-radius: 50%;
-    background: var(--light-background);
-    color: var(--secondary-color);
-    margin: 0 5px;
-    transition: 0.3s;
+    background: linear-gradient(135deg, rgba(59, 130, 246, 0.1), rgba(37, 99, 235, 0.2));
+    animation: float 6s ease-in-out infinite;
 }
 
-.footer .social-links a:hover {
-    background: var(--primary-color);
-    color: #fff;
+.shape-1 {
+    width: 200px;
+    height: 200px;
+    top: 20%;
+    right: 10%;
+    animation-delay: 0s;
 }
 
-/* === ANIMATIONS === */
-.fade-in-section {
+.shape-2 {
+    width: 150px;
+    height: 150px;
+    top: 60%;
+    left: 5%;
+    animation-delay: 2s;
+}
+
+.shape-3 {
+    width: 100px;
+    height: 100px;
+    top: 80%;
+    right: 20%;
+    animation-delay: 4s;
+}
+
+@keyframes float {
+
+    0%,
+    100% {
+        transform: translateY(0px) rotate(0deg);
+    }
+
+    50% {
+        transform: translateY(-20px) rotate(5deg);
+    }
+}
+
+.hero-container {
+    position: relative;
+    z-index: 2;
+    max-width: 1200px;
+    margin: 0 auto;
+    padding: 0 2rem;
+}
+
+.hero-content {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 4rem;
+    align-items: center;
+    min-height: 100vh;
+    padding-top: 100px;
+}
+
+.hero-text {
     opacity: 0;
     transform: translateY(30px);
-    transition: opacity 0.6s ease-out, transform 0.6s ease-out;
+    animation: slideUp 1s ease forwards;
 }
 
-.fade-in-section.is-visible {
+.hero-badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.5rem;
+    padding: 0.5rem 1rem;
+    background: rgba(59, 130, 246, 0.1);
+    color: #3b82f6;
+    border-radius: 50px;
+    font-size: 0.875rem;
+    font-weight: 500;
+    margin-bottom: 2rem;
+}
+
+.hero-text h1 {
+    font-size: 3.5rem;
+    font-weight: 800;
+    line-height: 1.1;
+    margin-bottom: 1.5rem;
+    color: #1f2937;
+}
+
+.gradient-text {
+    background: linear-gradient(135deg, #3b82f6, #8b5cf6);
+    -webkit-background-clip: text;
+    background-clip: text;
+    -webkit-text-fill-color: transparent;
+}
+
+.hero-description {
+    font-size: 1.25rem;
+    color: #6b7280;
+    margin-bottom: 2.5rem;
+    line-height: 1.6;
+}
+
+.hero-actions {
+    display: flex;
+    gap: 1rem;
+    margin-bottom: 3rem;
+}
+
+.btn-primary-hero,
+.btn-secondary-hero {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    padding: 1rem 2rem;
+    border-radius: 50px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    border: none;
+    font-size: 1rem;
+}
+
+.btn-primary-hero {
+    background: linear-gradient(135deg, #3b82f6, #2563eb);
+    color: white;
+}
+
+.btn-primary-hero:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 10px 25px rgba(59, 130, 246, 0.3);
+}
+
+.btn-secondary-hero {
+    background: white;
+    color: #3b82f6;
+    border: 2px solid #e5e7eb;
+}
+
+.btn-secondary-hero:hover {
+    border-color: #3b82f6;
+    transform: translateY(-2px);
+}
+
+.hero-stats-grid {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 2rem;
+}
+
+.stat-card-modern {
+    display: flex;
+    align-items: center;
+    gap: 1rem;
+    padding: 1.5rem;
+    background: white;
+    border-radius: 15px;
+    box-shadow: 0 4px 15px rgba(0, 0, 0, 0.05);
+    transition: transform 0.3s ease;
+}
+
+.stat-card-modern:hover {
+    transform: translateY(-5px);
+}
+
+.stat-icon {
+    color: #3b82f6;
+}
+
+.stat-content h3 {
+    font-size: 1.5rem;
+    font-weight: 700;
+    color: #1f2937;
+    margin-bottom: 0.25rem;
+}
+
+.stat-content p {
+    color: #6b7280;
+    font-size: 0.875rem;
+}
+
+/* Hero Visual */
+.hero-visual {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    opacity: 0;
+    transform: translateX(30px);
+    animation: slideLeft 1s ease forwards 0.5s;
+}
+
+.hero-mockup {
+    position: relative;
+}
+
+.mockup-container {
+    position: relative;
+    transform: perspective(1000px) rotateY(-15deg) rotateX(5deg);
+}
+
+.phone-mockup {
+    width: 300px;
+    height: 600px;
+    background: #1f2937;
+    border-radius: 30px;
+    padding: 20px;
+    box-shadow: 0 25px 50px rgba(0, 0, 0, 0.2);
+}
+
+.phone-screen {
+    width: 100%;
+    height: 100%;
+    background: white;
+    border-radius: 20px;
+    overflow: hidden;
+}
+
+.app-interface {
+    padding: 20px;
+    height: 100%;
+}
+
+.app-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 20px;
+}
+
+.app-title {
+    font-weight: 700;
+    color: #3b82f6;
+}
+
+.notification-badge {
+    width: 24px;
+    height: 24px;
+    background: #ef4444;
+    color: white;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 12px;
+    font-weight: 600;
+}
+
+.map-preview {
+    height: 200px;
+    background: linear-gradient(135deg, #e5f3ff, #bfdbfe);
+    border-radius: 10px;
+    position: relative;
+    margin-bottom: 20px;
+}
+
+.map-pins {
+    position: relative;
+    height: 100%;
+}
+
+.pin {
+    position: absolute;
+    width: 12px;
+    height: 12px;
+    border-radius: 50%;
+    animation: pulse 2s infinite;
+}
+
+.pin-1 {
+    background: #ef4444;
+    top: 30%;
+    left: 40%;
+}
+
+.pin-2 {
+    background: #f59e0b;
+    top: 60%;
+    right: 30%;
+}
+
+.pin-3 {
+    background: #10b981;
+    bottom: 20%;
+    left: 60%;
+}
+
+@keyframes pulse {
+    0% {
+        transform: scale(1);
+        opacity: 1;
+    }
+
+    50% {
+        transform: scale(1.5);
+        opacity: 0.7;
+    }
+
+    100% {
+        transform: scale(1);
+        opacity: 1;
+    }
+}
+
+.incident-card {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    padding: 15px;
+    background: #f8fafc;
+    border-radius: 10px;
+}
+
+.incident-status {
+    width: 12px;
+    height: 12px;
+    border-radius: 50%;
+}
+
+.incident-status.resolved {
+    background: #10b981;
+}
+
+.incident-info h4 {
+    font-size: 14px;
+    font-weight: 600;
+    margin-bottom: 4px;
+}
+
+.incident-info p {
+    font-size: 12px;
+    color: #6b7280;
+}
+
+/* About Section */
+.about-modern {
+    padding: 6rem 0;
+    background: white;
+}
+
+.about-content {
+    max-width: 800px;
+    margin: 0 auto;
+    text-align: center;
+}
+
+.about-content h2 {
+    font-size: 2.5rem;
+    font-weight: 700;
+    margin-bottom: 1.5rem;
+    color: #1f2937;
+}
+
+.lead {
+    font-size: 1.25rem;
+    color: #6b7280;
+    margin-bottom: 3rem;
+    line-height: 1.6;
+}
+
+.mission-points {
+    display: grid;
+    grid-template-columns: 1fr;
+    gap: 2rem;
+    text-align: left;
+}
+
+.mission-point {
+    display: flex;
+    align-items: flex-start;
+    gap: 1rem;
+    padding: 2rem;
+    background: #f8fafc;
+    border-radius: 15px;
+    transition: transform 0.3s ease;
+}
+
+.mission-point:hover {
+    transform: translateY(-5px);
+}
+
+.mission-point svg {
+    color: #10b981;
+    flex-shrink: 0;
+    margin-top: 0.25rem;
+}
+
+.mission-point h4 {
+    font-size: 1.25rem;
+    font-weight: 600;
+    margin-bottom: 0.5rem;
+    color: #1f2937;
+}
+
+.mission-point p {
+    color: #6b7280;
+}
+
+/* Process/Timeline Section */
+.process-modern {
+    padding: 6rem 0;
+    background: linear-gradient(135deg, #f8fafc 0%, #e2e8f0 100%);
+}
+
+.section-header {
+    text-align: center;
+    margin-bottom: 4rem;
+}
+
+.section-header h2 {
+    font-size: 2.5rem;
+    font-weight: 700;
+    margin-bottom: 1rem;
+    color: #1f2937;
+}
+
+.section-header p {
+    font-size: 1.125rem;
+    color: #6b7280;
+    max-width: 600px;
+    margin: 0 auto;
+}
+
+.process-timeline {
+    display: grid;
+    grid-template-columns: 1fr;
+    gap: 3rem;
+    max-width: 900px;
+    margin: 0 auto;
+}
+
+.timeline-item {
+    display: flex;
+    align-items: flex-start;
+    gap: 2rem;
+    padding: 2.5rem;
+    background: white;
+    border-radius: 20px;
+    box-shadow: 0 10px 30px rgba(0, 0, 0, 0.05);
+    transition: transform 0.3s ease;
+    position: relative;
+}
+
+.timeline-item:hover {
+    transform: scale(1.02);
+}
+
+.timeline-number {
+    font-size: 1.5rem;
+    font-weight: 800;
+    width: 60px;
+    height: 60px;
+    background: linear-gradient(135deg, #3b82f6, #8b5cf6);
+    color: white;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+}
+
+.timeline-content {
+    flex: 1;
+}
+
+.timeline-icon {
+    color: #3b82f6;
+    margin-bottom: 1rem;
+}
+
+.timeline-content h3 {
+    font-size: 1.5rem;
+    font-weight: 700;
+    margin-bottom: 1rem;
+    color: #1f2937;
+}
+
+.timeline-content p {
+    color: #6b7280;
+    margin-bottom: 1.5rem;
+    line-height: 1.6;
+}
+
+.timeline-features {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.75rem;
+}
+
+.timeline-features span {
+    padding: 0.5rem 1rem;
+    background: rgba(59, 130, 246, 0.1);
+    color: #3b82f6;
+    border-radius: 25px;
+    font-size: 0.875rem;
+    font-weight: 500;
+}
+
+/* Features Section */
+.features-modern {
+    padding: 6rem 0;
+    background: white;
+}
+
+.features-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(350px, 1fr));
+    gap: 2rem;
+}
+
+.feature-card-modern {
+    padding: 2.5rem;
+    background: white;
+    border-radius: 20px;
+    box-shadow: 0 10px 30px rgba(0, 0, 0, 0.05);
+    border: 1px solid #f1f5f9;
+    transition: all 0.3s ease;
+    opacity: 0;
+    transform: translateY(30px);
+    animation: slideUp 0.6s ease forwards;
+}
+
+.feature-card-modern:hover {
+    transform: translateY(-10px);
+    box-shadow: 0 20px 40px rgba(0, 0, 0, 0.1);
+}
+
+.feature-icon-wrapper {
+    width: 60px;
+    height: 60px;
+    background: linear-gradient(135deg, #3b82f6, #8b5cf6);
+    color: white;
+    border-radius: 15px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    margin-bottom: 1.5rem;
+}
+
+.feature-card-modern h3 {
+    font-size: 1.25rem;
+    font-weight: 700;
+    margin-bottom: 1rem;
+    color: #1f2937;
+}
+
+.feature-card-modern p {
+    color: #6b7280;
+    line-height: 1.6;
+}
+
+/* Testimonials Section */
+.testimonials-modern {
+    padding: 6rem 0;
+    background: linear-gradient(135deg, #f8fafc 0%, #e2e8f0 100%);
+}
+
+.testimonials-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(350px, 1fr));
+    gap: 2rem;
+}
+
+.testimonial-card-modern {
+    padding: 2rem;
+    background: white;
+    border-radius: 20px;
+    box-shadow: 0 10px 30px rgba(0, 0, 0, 0.05);
+    transition: transform 0.3s ease;
+}
+
+.testimonial-card-modern:hover {
+    transform: translateY(-5px);
+}
+
+.testimonial-header {
+    display: flex;
+    align-items: center;
+    gap: 1rem;
+    margin-bottom: 1.5rem;
+}
+
+.testimonial-avatar {
+    width: 50px;
+    height: 50px;
+    background: linear-gradient(135deg, #3b82f6, #8b5cf6);
+    color: white;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-weight: 600;
+    font-size: 1.125rem;
+}
+
+.testimonial-info h4 {
+    font-weight: 600;
+    color: #1f2937;
+    margin-bottom: 0.25rem;
+}
+
+.testimonial-info p {
+    color: #6b7280;
+    font-size: 0.875rem;
+}
+
+.testimonial-rating {
+    display: flex;
+    gap: 0.25rem;
+    color: #fbbf24;
+    margin-left: auto;
+}
+
+.testimonial-content {
+    color: #374151;
+    line-height: 1.6;
+    font-style: italic;
+}
+
+/* FAQ Section */
+.faq-modern {
+    padding: 6rem 0;
+    background: white;
+}
+
+.faq-container {
+    max-width: 800px;
+    margin: 0 auto;
+}
+
+.modern-faq-item {
+    border: 1px solid #e5e7eb;
+    border-radius: 10px;
+    margin-bottom: 1rem;
+    overflow: hidden;
+    transition: all 0.3s ease;
+}
+
+.modern-faq-item:hover {
+    border-color: #3b82f6;
+}
+
+.faq-question {
+    width: 100%;
+    padding: 1.5rem;
+    background: white;
+    border: none;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    cursor: pointer;
+    font-weight: 600;
+    color: #1f2937;
+    transition: background-color 0.3s ease;
+}
+
+.faq-question:hover {
+    background: #f8fafc;
+}
+
+.faq-icon {
+    transition: transform 0.3s ease;
+    color: #6b7280;
+}
+
+.faq-icon.rotated {
+    transform: rotate(180deg);
+}
+
+.faq-answer {
+    max-height: 0;
+    overflow: hidden;
+    transition: max-height 0.3s ease;
+}
+
+.modern-faq-item.active .faq-answer {
+    max-height: 200px;
+}
+
+.faq-answer p {
+    padding: 0 1.5rem 1.5rem;
+    color: #6b7280;
+    line-height: 1.6;
+}
+
+/* CTA Section */
+.cta-modern {
+    padding: 6rem 0;
+    background: linear-gradient(135deg, #1e40af, #3b82f6);
+    color: white;
+}
+
+.cta-content {
+    text-align: center;
+    max-width: 600px;
+    margin: 0 auto;
+}
+
+.cta-content h2 {
+    font-size: 2.5rem;
+    font-weight: 700;
+    margin-bottom: 1rem;
+}
+
+.cta-content p {
+    font-size: 1.125rem;
+    margin-bottom: 2.5rem;
+    opacity: 0.9;
+}
+
+.cta-actions {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 2rem;
+}
+
+.btn-cta-primary {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    padding: 1rem 2rem;
+    background: white;
+    color: #3b82f6;
+    border: none;
+    border-radius: 50px;
+    font-weight: 600;
+    font-size: 1rem;
+    cursor: pointer;
+    transition: all 0.3s ease;
+}
+
+.btn-cta-primary:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 10px 25px rgba(255, 255, 255, 0.2);
+}
+
+.cta-info {
+    display: flex;
+    gap: 2rem;
+}
+
+.info-item {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    opacity: 0.9;
+}
+
+/* Footer */
+.footer-modern {
+    background: #1f2937;
+    color: white;
+    padding: 4rem 0 2rem;
+}
+
+.footer-content {
+    display: grid;
+    grid-template-columns: 2fr 1fr 1fr 1fr;
+    gap: 3rem;
+    margin-bottom: 3rem;
+}
+
+.footer-section h4 {
+    font-weight: 600;
+    margin-bottom: 1rem;
+    color: white;
+}
+
+.footer-section p {
+    color: #9ca3af;
+    line-height: 1.6;
+    margin-bottom: 1.5rem;
+}
+
+.footer-section a {
+    display: block;
+    color: #9ca3af;
+    text-decoration: none;
+    margin-bottom: 0.5rem;
+    transition: color 0.3s ease;
+}
+
+.footer-section a:hover {
+    color: #3b82f6;
+}
+
+.social-links {
+    display: flex;
+    gap: 1rem;
+}
+
+.social-links a {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 40px;
+    height: 40px;
+    background: #374151;
+    border-radius: 50%;
+    transition: all 0.3s ease;
+}
+
+.social-links a:hover {
+    background: #3b82f6;
+    transform: translateY(-2px);
+}
+
+.footer-bottom {
+    border-top: 1px solid #374151;
+    padding-top: 2rem;
+    text-align: center;
+    color: #9ca3af;
+}
+
+.footer-bottom p {
+    margin-bottom: 0.5rem;
+}
+
+/* Animations */
+@keyframes slideUp {
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+@keyframes slideLeft {
+    to {
+        opacity: 1;
+        transform: translateX(0);
+    }
+}
+
+.animate-on-scroll {
+    opacity: 0;
+    transform: translateY(30px);
+    transition: all 0.6s ease;
+}
+
+.animate-on-scroll.animated {
     opacity: 1;
     transform: translateY(0);
 }
 
-/* === BOOTSTRAP GRID HELPERS (Simplified) === */
-.container {
-    width: 100%;
-    max-width: 1200px;
-    padding-right: 15px;
-    padding-left: 15px;
-    margin-right: auto;
-    margin-left: auto;
-}
+/* Responsive Design */
+@media (max-width: 1024px) {
+    .hero-content {
+        grid-template-columns: 1fr;
+        gap: 3rem;
+        text-align: center;
+    }
 
-.row {
-    display: flex;
-    flex-wrap: wrap;
-    margin-right: -15px;
-    margin-left: -15px;
-}
+    .hero-text h1 {
+        font-size: 2.5rem;
+    }
 
-.col-12,
-.col-lg-6,
-.col-md-6 {
-    position: relative;
-    width: 100%;
-    padding-right: 15px;
-    padding-left: 15px;
-}
+    .timeline-item {
+        flex-direction: column;
+        text-align: center;
+    }
 
-@media (min-width: 768px) {
-    .col-md-6 {
-        flex: 0 0 50%;
-        max-width: 50%;
+    .footer-content {
+        grid-template-columns: 1fr 1fr;
+        gap: 2rem;
     }
 }
 
-@media (min-width: 992px) {
-    .col-lg-6 {
-        flex: 0 0 50%;
-        max-width: 50%;
+@media (max-width: 768px) {
+    .nav-menu {
+        position: fixed;
+        top: 100%;
+        left: 0;
+        right: 0;
+        background: white;
+        flex-direction: column;
+        padding: 2rem;
+        box-shadow: 0 10px 30px rgba(0, 0, 0, 0.1);
+        transform: translateY(-100%);
+        opacity: 0;
+        visibility: hidden;
+        transition: all 0.3s ease;
+    }
+
+    .nav-menu.open {
+        transform: translateY(0);
+        opacity: 1;
+        visibility: visible;
+    }
+
+    .menu-toggle {
+        display: block;
+    }
+
+    .hero-text h1 {
+        font-size: 2rem;
+    }
+
+    .hero-actions {
+        flex-direction: column;
+    }
+
+    .hero-stats-grid {
+        grid-template-columns: 1fr;
+    }
+
+    .phone-mockup {
+        width: 250px;
+        height: 500px;
+    }
+
+    .features-grid {
+        grid-template-columns: 1fr;
+    }
+
+    .testimonials-grid {
+        grid-template-columns: 1fr;
+    }
+
+    .cta-info {
+        flex-direction: column;
+        gap: 1rem;
+    }
+
+    .footer-content {
+        grid-template-columns: 1fr;
+    }
+
+    .section-header h2 {
+        font-size: 2rem;
+    }
+
+    .about-content h2 {
+        font-size: 2rem;
+    }
+
+    .cta-content h2 {
+        font-size: 2rem;
     }
 }
 
-.align-items-center {
-    align-items: center;
-}
+@media (max-width: 480px) {
+    .container {
+        padding: 0 1rem;
+    }
 
-.justify-content-center {
-    justify-content: center;
-}
+    .hero-container {
+        padding: 0 1rem;
+    }
 
-.g-4 {
-    gap: 1.5rem;
-}
+    .header-container {
+        padding: 1rem;
+    }
 
-.img-fluid {
-    max-width: 100%;
-    height: auto;
+    .hero-text h1 {
+        font-size: 1.75rem;
+    }
+
+    .hero-description {
+        font-size: 1rem;
+    }
+
+    .btn-primary-hero,
+    .btn-secondary-hero {
+        padding: 0.75rem 1.5rem;
+        font-size: 0.875rem;
+    }
 }
 
 ============================================================
@@ -10833,205 +11851,256 @@ import {
   BarChart3,
   Users,
   ChevronDown,
+  Star,
+  Zap,
+  Globe,
+  Award,
+  Play,
+  Menu,
+  X,
+  Phone,
+  Mail,
+  Heart,
+  TrendingUp,
+  Eye,
+  MessageSquare,
 } from "lucide-react";
-import "./LandingPage.css";
-import logoImage from "../../assets/360_logo.png";
-import heroIllustration from "../../assets/smartcity.png"; // Make sure you have this image
+import "./LandingPage.css"; // Import your CSS styles
+
+// Mock logo - replace with your actual logo
+const LogoComponent = () => (
+  <div className="logo-placeholder">
+    <div className="logo-icon">
+      <Shield size={28} />
+    </div>
+    <span className="logo-text">Medinati360</span>
+  </div>
+);
 
 const FAQItem = ({ question, answer }) => {
   const [isOpen, setIsOpen] = useState(false);
   return (
-    <div className={`faq-item ${isOpen ? "active" : ""}`}>
-      <h3 onClick={() => setIsOpen(!isOpen)}>
-        <span className="faq-question-text">{question}</span>
-        <ChevronDown className="faq-toggle" />
-      </h3>
-      <div className="faq-content">
+    <div className={`modern-faq-item ${isOpen ? "active" : ""}`}>
+      <button className="faq-question" onClick={() => setIsOpen(!isOpen)}>
+        <span>{question}</span>
+        <ChevronDown className={`faq-icon ${isOpen ? "rotated" : ""}`} />
+      </button>
+      <div className="faq-answer">
         <p>{answer}</p>
       </div>
     </div>
   );
 };
 
+const FeatureCard = ({ icon, title, description, delay = 0 }) => (
+  <div className="feature-card-modern" style={{ animationDelay: `${delay}ms` }}>
+    <div className="feature-icon-wrapper">{icon}</div>
+    <h3>{title}</h3>
+    <p>{description}</p>
+  </div>
+);
+
+const TestimonialCard = ({ name, role, content, rating, avatar }) => (
+  <div className="testimonial-card-modern">
+    <div className="testimonial-header">
+      <div className="testimonial-avatar">{avatar || name[0]}</div>
+      <div className="testimonial-info">
+        <h4>{name}</h4>
+        <p>{role}</p>
+      </div>
+      <div className="testimonial-rating">
+        {[...Array(rating)].map((_, i) => (
+          <Star key={i} size={16} fill="currentColor" />
+        ))}
+      </div>
+    </div>
+    <p className="testimonial-content">"{content}"</p>
+  </div>
+);
+
+const StatCard = ({ number, label, icon }) => (
+  <div className="stat-card-modern">
+    <div className="stat-icon">{icon}</div>
+    <div className="stat-content">
+      <h3>{number}</h3>
+      <p>{label}</p>
+    </div>
+  </div>
+);
+
 const LandingPage = ({ onLoginClick }) => {
+  const [isMenuOpen, setIsMenuOpen] = useState(false);
+  const [scrolled, setScrolled] = useState(false);
+
   useEffect(() => {
     const handleScroll = () => {
-      const sections = document.querySelectorAll(".fade-in-section");
-      sections.forEach((section) => {
-        const rect = section.getBoundingClientRect();
-        if (rect.top < window.innerHeight * 0.8 && rect.bottom > 0) {
-          section.classList.add("is-visible");
+      setScrolled(window.scrollY > 50);
+
+      // Animate elements on scroll
+      const elements = document.querySelectorAll(".animate-on-scroll");
+      elements.forEach((element) => {
+        const elementTop = element.getBoundingClientRect().top;
+        const elementVisible = 150;
+
+        if (elementTop < window.innerHeight - elementVisible) {
+          element.classList.add("animated");
         }
       });
     };
-    window.addEventListener("scroll", handleScroll, { passive: true });
-    handleScroll();
+
+    window.addEventListener("scroll", handleScroll);
+    handleScroll(); // Initial check
+
     return () => window.removeEventListener("scroll", handleScroll);
   }, []);
 
-  return (
-    <div className="landing-page-wrapper-v2">
-      <header id="header" className="landing-header-v2">
-        <div className="header-container-v2">
-          <a href="#" className="logo">
-            <img src={logoImage} alt="Medinati360 Logo" />
-          </a>
+  const testimonials = [
+    {
+      name: "Amina Benali",
+      role: "Résidente de Casablanca",
+      content:
+        "Grâce à Medinati360, le problème d'éclairage dans ma rue a été résolu en une semaine. Interface très intuitive !",
+      rating: 5,
+    },
+    {
+      name: "Omar Tazi",
+      role: "Commerçant à Rabat",
+      content:
+        "Enfin une plateforme qui fonctionne ! Les autorités répondent rapidement et on peut suivre l'évolution en temps réel.",
+      rating: 5,
+    },
+    {
+      name: "Fatima El Amrani",
+      role: "Enseignante à Temara",
+      content:
+        "Une vraie révolution pour la participation citoyenne. Mes élèves utilisent aussi la plateforme pour leur quartier.",
+      rating: 5,
+    },
+  ];
 
-          <nav className="navmenu">
-            <ul>
-              <li>
-                <a href="#hero" className="active">
-                  Accueil
-                </a>
-              </li>
-              <li>
-                <a href="#about">Notre Mission</a>
-              </li>
-              <li>
-                <a href="#how-it-works">Processus</a>
-              </li>
-              <li>
-                <a href="#features">Fonctionnalités</a>
-              </li>
-              <li>
-                <a href="#faq">FAQ</a>
-              </li>
-            </ul>
+  return (
+    <div className="modern-landing">
+      {/* Header */}
+      <header className={`modern-header ${scrolled ? "scrolled" : ""}`}>
+        <div className="header-container">
+          <LogoComponent />
+
+          <nav className={`nav-menu ${isMenuOpen ? "open" : ""}`}>
+            <a href="#home" onClick={() => setIsMenuOpen(false)}>
+              Accueil
+            </a>
+            <a href="#about" onClick={() => setIsMenuOpen(false)}>
+              Mission
+            </a>
+            <a href="#how-it-works" onClick={() => setIsMenuOpen(false)}>
+              Processus
+            </a>
+            <a href="#features" onClick={() => setIsMenuOpen(false)}>
+              Fonctionnalités
+            </a>
+            <a href="#testimonials" onClick={() => setIsMenuOpen(false)}>
+              Témoignages
+            </a>
+            <a href="#faq" onClick={() => setIsMenuOpen(false)}>
+              FAQ
+            </a>
           </nav>
-          <div className="header-social-links">
-            <a href="#" className="twitter">
-              <Twitter size={18} />
-            </a>
-            <a href="#" className="facebook">
-              <Facebook size={18} />
-            </a>
-            <a href="#" className="instagram">
-              <Instagram size={18} />
-            </a>
+
+          <div className="header-actions">
+            <button className="btn-login" onClick={onLoginClick}>
+              Se connecter
+            </button>
+            <button
+              className="menu-toggle"
+              onClick={() => setIsMenuOpen(!isMenuOpen)}
+            >
+              {isMenuOpen ? <X size={24} /> : <Menu size={24} />}
+            </button>
           </div>
         </div>
       </header>
 
-      <main className="main">
-        <section id="hero" className="hero section">
-          <div className="container">
-            <div className="row align-items-center content">
-              <div className="col-lg-6">
-                <h2>Améliorez Votre Ville, Un Signalement à la Fois</h2>
-                <p className="lead">
-                  La plateforme citoyenne pour signaler, suivre et résoudre les
-                  incidents urbains. Ensemble, rendons nos villes meilleures.
-                </p>
-                <div className="cta-buttons">
-                  <button onClick={onLoginClick} className="btn btn-primary">
-                    Accéder à la Plateforme
-                  </button>
-                  <a href="#how-it-works" className="btn btn-outline">
-                    Comment ça marche
-                  </a>
-                </div>
-                <div className="hero-stats">
-                  <div className="stat-item">
-                    <span className="stat-number">10,000+</span>
-                    <span className="stat-label">Signalements Traités</span>
-                  </div>
-                  <div className="stat-item">
-                    <span className="stat-number">5+</span>
-                    <span className="stat-label">Villes Actives</span>
-                  </div>
-                  <div className="stat-item">
-                    <span className="stat-number">92%</span>
-                    <span className="stat-label">Taux de Satisfaction</span>
-                  </div>
-                </div>
+      {/* Hero Section */}
+      <section id="home" className="hero-modern">
+        <div className="hero-background">
+          <div className="hero-pattern"></div>
+          <div className="floating-shapes">
+            <div className="shape shape-1"></div>
+            <div className="shape shape-2"></div>
+            <div className="shape shape-3"></div>
+          </div>
+        </div>
+
+        <div className="hero-container">
+          <div className="hero-content">
+            <div className="hero-text animate-on-scroll">
+              <div className="hero-badge">
+                <Zap size={16} />
+                <span>Plateforme #1 au Maroc</span>
               </div>
-              <div className="col-lg-6">
-                <div className="hero-image">
-                  <img
-                    src={heroIllustration}
-                    alt="Illustration d'une ville intelligente"
-                    className="img-fluid"
-                  />
-                  <div className="shape-1"></div>
-                  <div className="shape-2"></div>
-                </div>
+              <h1>
+                Transformez Votre Ville,{" "}
+                <span className="gradient-text">Un Signalement à la Fois</span>
+              </h1>
+              <p className="hero-description">
+                La plateforme citoyenne intelligente qui connecte les résidents
+                aux autorités locales. Signalez, suivez et célébrez les
+                améliorations de votre quartier en temps réel.
+              </p>
+
+              <div className="hero-actions">
+                <button className="btn-primary-hero" onClick={onLoginClick}>
+                  <Play size={20} />
+                  Commencer maintenant
+                </button>
+                <button className="btn-secondary-hero">
+                  <Eye size={20} />
+                  Voir la démo
+                </button>
+              </div>
+
+              <div className="hero-stats-grid">
+                <StatCard
+                  number="15K+"
+                  label="Signalements traités"
+                  icon={<CheckCircle size={20} />}
+                />
+                <StatCard
+                  number="8 villes"
+                  label="Déjà connectées"
+                  icon={<MapPin size={20} />}
+                />
+                <StatCard
+                  number="96%"
+                  label="Satisfaction citoyenne"
+                  icon={<Heart size={20} />}
+                />
               </div>
             </div>
-          </div>
-        </section>
 
-        <section id="about" className="about section light-background">
-          <div className="container section-title">
-            <h2>Notre Mission</h2>
-            <p>
-              Créer un pont entre les citoyens et leur administration pour
-              construire des villes plus réactives, transparentes et agréables à
-              vivre.
-            </p>
-          </div>
-        </section>
-
-        <section id="how-it-works" className="resume section">
-          <div className="container section-title">
-            <h2>Le Processus de Résolution</h2>
-            <p>
-              De votre signalement à l'intervention, chaque étape est simple et
-              transparente.
-            </p>
-          </div>
-          <div className="container">
-            <div className="row">
-              <div className="col-12">
-                <div className="resume-wrapper">
-                  <div className="resume-block">
-                    <div className="timeline">
-                      <div className="timeline-item">
-                        <div className="timeline-left">
-                          <h4 className="company">Étape 1</h4>
+            <div className="hero-visual animate-on-scroll">
+              <div className="hero-mockup">
+                <div className="mockup-container">
+                  <div className="phone-mockup">
+                    <div className="phone-screen">
+                      <div className="app-interface">
+                        <div className="app-header">
+                          <div className="app-title">Medinati360</div>
+                          <div className="notification-badge">3</div>
                         </div>
-                        <div className="timeline-dot"></div>
-                        <div className="timeline-right">
-                          <h3 className="position">
-                            <Camera className="icon" /> Signalement Facile
-                          </h3>
-                          <p className="description">
-                            Prenez une photo, ajoutez une description et
-                            localisez le problème. Votre signalement est créé en
-                            moins d'une minute.
-                          </p>
+                        <div className="map-preview">
+                          <div className="map-pins">
+                            <div className="pin pin-1"></div>
+                            <div className="pin pin-2"></div>
+                            <div className="pin pin-3"></div>
+                          </div>
                         </div>
-                      </div>
-                      <div className="timeline-item">
-                        <div className="timeline-left">
-                          <h4 className="company">Étape 2</h4>
-                        </div>
-                        <div className="timeline-dot"></div>
-                        <div className="timeline-right">
-                          <h3 className="position">
-                            <Shield className="icon" /> Validation &
-                            Transmission
-                          </h3>
-                          <p className="description">
-                            Notre équipe de modération vérifie la validité du
-                            signalement avant de le transmettre instantanément
-                            au service municipal compétent.
-                          </p>
-                        </div>
-                      </div>
-                      <div className="timeline-item">
-                        <div className="timeline-left">
-                          <h4 className="company">Étape 3</h4>
-                        </div>
-                        <div className="timeline-dot"></div>
-                        <div className="timeline-right">
-                          <h3 className="position">
-                            <Clock className="icon" /> Suivi en Temps Réel
-                          </h3>
-                          <p className="description">
-                            Suivez l'état d'avancement de votre signalement
-                            (Reçu, En cours, Résolu) et recevez des
-                            notifications à chaque étape clé.
-                          </p>
+                        <div className="incident-card">
+                          <div className="incident-status resolved"></div>
+                          <div className="incident-info">
+                            <h4>Éclairage réparé</h4>
+                            <p>Rue Mohammed V</p>
+                          </div>
                         </div>
                       </div>
                     </div>
@@ -11040,95 +12109,306 @@ const LandingPage = ({ onLoginClick }) => {
               </div>
             </div>
           </div>
-        </section>
+        </div>
+      </section>
 
-        <section id="features" className="services section light-background">
-          <div className="container section-title">
-            <h2>Fonctionnalités Clés</h2>
-          </div>
-          <div className="container">
-            <div className="row g-4">
-              <div className="col-md-6">
-                <div className="service-item">
-                  <MapPin className="icon" />
-                  <h3>Cartographie Interactive</h3>
-                  <p>Visualisez tous les incidents sur une carte dynamique.</p>
-                </div>
-              </div>
-              <div className="col-md-6">
-                <div className="service-item">
-                  <BarChart3 className="icon" />
-                  <h3>Statistiques Publiques</h3>
-                  <p>
-                    Accédez à des données transparentes sur la performance des
-                    services.
-                  </p>
-                </div>
-              </div>
-              <div className="col-md-6">
-                <div className="service-item">
-                  <Users className="icon" />
-                  <h3>Profil Citoyen</h3>
-                  <p>Suivez l'historique et l'impact de vos contributions.</p>
-                </div>
-              </div>
-              <div className="col-md-6">
-                <div className="service-item">
-                  <CheckCircle className="icon" />
-                  <h3>Notifications Automatisées</h3>
-                  <p>Restez informé sans effort à chaque étape du processus.</p>
-                </div>
-              </div>
-            </div>
-          </div>
-        </section>
-
-        <section id="faq" className="faq section">
-          <div className="container section-title">
-            <h2>Questions Fréquemment Posées</h2>
-          </div>
-          <div className="container">
-            <div className="row justify-content-center">
-              <div className="col-lg-10">
-                <div className="faq-container">
-                  <FAQItem
-                    question="Est-ce que l'utilisation de Medinati360 est gratuite ?"
-                    answer="Oui, la plateforme est entièrement gratuite pour tous les citoyens. Notre mission est de faciliter la participation civique sans aucune barrière."
-                  />
-                  <FAQItem
-                    question="Mes données personnelles sont-elles en sécurité ?"
-                    answer="Absolument. Nous respectons les normes les plus strictes en matière de protection des données. Vos informations personnelles ne sont jamais partagées sans votre consentement."
-                  />
-                  <FAQItem
-                    question="Que se passe-t-il après que j'ai signalé un incident ?"
-                    answer="Une fois soumis, votre signalement est examiné par un modérateur, puis transmis au service municipal compétent. Vous pouvez suivre chaque étape de ce processus directement depuis votre compte."
-                  />
-                </div>
-              </div>
-            </div>
-          </div>
-        </section>
-      </main>
-
-      <footer id="footer" className="footer">
+      {/* About Section */}
+      <section id="about" className="about-modern animate-on-scroll">
         <div className="container">
-          <div className="copyright text-center">
+          <div className="about-content">
+            <div className="about-text">
+              <h2>Notre Mission</h2>
+              <p className="lead">
+                Créer un pont numérique entre les citoyens et leur
+                administration pour construire des villes plus réactives,
+                transparentes et agréables à vivre.
+              </p>
+              <div className="mission-points">
+                <div className="mission-point">
+                  <CheckCircle size={24} />
+                  <div>
+                    <h4>Transparence totale</h4>
+                    <p>Suivi en temps réel de chaque signalement</p>
+                  </div>
+                </div>
+                <div className="mission-point">
+                  <CheckCircle size={24} />
+                  <div>
+                    <h4>Efficacité garantie</h4>
+                    <p>Réduction de 60% du temps de traitement</p>
+                  </div>
+                </div>
+                <div className="mission-point">
+                  <CheckCircle size={24} />
+                  <div>
+                    <h4>Participation citoyenne</h4>
+                    <p>Donnez une voix à chaque résident</p>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      {/* How It Works */}
+      <section id="how-it-works" className="process-modern animate-on-scroll">
+        <div className="container">
+          <div className="section-header">
+            <h2>Un Processus Simple en 3 Étapes</h2>
             <p>
-              © <span>Copyright</span>{" "}
-              <strong className="px-1 sitename">Medinati360</strong>{" "}
-              <span>Tous droits réservés</span>
+              De votre signalement à la résolution, chaque étape est optimisée
+              pour l'efficacité
             </p>
           </div>
-          <div className="social-links d-flex justify-content-center">
-            <a href="">
-              <Twitter size={18} />
-            </a>
-            <a href="">
-              <Facebook size={18} />
-            </a>
-            <a href="">
-              <Instagram size={18} />
-            </a>
+
+          <div className="process-timeline">
+            <div className="timeline-item">
+              <div className="timeline-number">01</div>
+              <div className="timeline-content">
+                <div className="timeline-icon">
+                  <Camera size={32} />
+                </div>
+                <h3>Signalement Instantané</h3>
+                <p>
+                  Prenez une photo, ajoutez une description et géolocalisez le
+                  problème. Votre signalement est créé en moins de 30 secondes.
+                </p>
+                <div className="timeline-features">
+                  <span>📱 Interface intuitive</span>
+                  <span>📍 Géolocalisation automatique</span>
+                  <span>⚡ Validation instantanée</span>
+                </div>
+              </div>
+            </div>
+
+            <div className="timeline-item">
+              <div className="timeline-number">02</div>
+              <div className="timeline-content">
+                <div className="timeline-icon">
+                  <Shield size={32} />
+                </div>
+                <h3>Validation & Transmission</h3>
+                <p>
+                  Notre IA et notre équipe de modération vérifient la validité
+                  avant transmission automatique au service compétent.
+                </p>
+                <div className="timeline-features">
+                  <span>🤖 IA de validation</span>
+                  <span>⚡ Transmission instantanée</span>
+                  <span>🎯 Service approprié</span>
+                </div>
+              </div>
+            </div>
+
+            <div className="timeline-item">
+              <div className="timeline-number">03</div>
+              <div className="timeline-content">
+                <div className="timeline-icon">
+                  <TrendingUp size={32} />
+                </div>
+                <h3>Suivi & Résolution</h3>
+                <p>
+                  Suivez l'évolution en temps réel avec des notifications
+                  automatiques à chaque étape clé du processus.
+                </p>
+                <div className="timeline-features">
+                  <span>📊 Suivi en temps réel</span>
+                  <span>🔔 Notifications automatiques</span>
+                  <span>✅ Confirmation de résolution</span>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      {/* Features */}
+      <section id="features" className="features-modern animate-on-scroll">
+        <div className="container">
+          <div className="section-header">
+            <h2>Fonctionnalités Avancées</h2>
+            <p>
+              Des outils puissants pour une expérience citoyenne exceptionnelle
+            </p>
+          </div>
+
+          <div className="features-grid">
+            <FeatureCard
+              icon={<MapPin size={32} />}
+              title="Cartographie Interactive"
+              description="Visualisez tous les incidents sur une carte dynamique avec filtres avancés et données en temps réel."
+              delay={0}
+            />
+            <FeatureCard
+              icon={<BarChart3 size={32} />}
+              title="Analytics Publiques"
+              description="Accédez à des statistiques transparentes sur la performance des services municipaux."
+              delay={100}
+            />
+            <FeatureCard
+              icon={<Users size={32} />}
+              title="Profil Citoyen"
+              description="Suivez l'historique et l'impact de vos contributions avec un système de points et badges."
+              delay={200}
+            />
+            <FeatureCard
+              icon={<MessageSquare size={32} />}
+              title="Communication Directe"
+              description="Échangez directement avec les services municipaux via un système de messagerie intégré."
+              delay={300}
+            />
+            <FeatureCard
+              icon={<Award size={32} />}
+              title="Gamification"
+              description="Gagnez des récompenses et des reconnaissances pour votre engagement civique."
+              delay={400}
+            />
+            <FeatureCard
+              icon={<Globe size={32} />}
+              title="Multi-plateformes"
+              description="Accédez à tous vos signalements depuis le web, mobile iOS et Android."
+              delay={500}
+            />
+          </div>
+        </div>
+      </section>
+
+      {/* Testimonials */}
+      <section
+        id="testimonials"
+        className="testimonials-modern animate-on-scroll"
+      >
+        <div className="container">
+          <div className="section-header">
+            <h2>Ce Que Disent Nos Citoyens</h2>
+            <p>Plus de 50,000 utilisateurs actifs nous font confiance</p>
+          </div>
+
+          <div className="testimonials-grid">
+            {testimonials.map((testimonial, index) => (
+              <TestimonialCard key={index} {...testimonial} />
+            ))}
+          </div>
+        </div>
+      </section>
+
+      {/* FAQ */}
+      <section id="faq" className="faq-modern animate-on-scroll">
+        <div className="container">
+          <div className="section-header">
+            <h2>Questions Fréquemment Posées</h2>
+            <p>Tout ce que vous devez savoir sur Medinati360</p>
+          </div>
+
+          <div className="faq-container">
+            <FAQItem
+              question="Est-ce que l'utilisation de Medinati360 est gratuite ?"
+              answer="Oui, la plateforme est entièrement gratuite pour tous les citoyens. Notre mission est de faciliter la participation civique sans aucune barrière financière."
+            />
+            <FAQItem
+              question="Mes données personnelles sont-elles en sécurité ?"
+              answer="Absolument. Nous respectons les normes les plus strictes en matière de protection des données (RGPD). Vos informations personnelles ne sont jamais partagées sans votre consentement explicite."
+            />
+            <FAQItem
+              question="Que se passe-t-il après que j'ai signalé un incident ?"
+              answer="Votre signalement est d'abord validé par notre système IA puis par notre équipe. Une fois approuvé, il est automatiquement transmis au service municipal compétent. Vous recevez des notifications à chaque étape."
+            />
+            <FAQItem
+              question="Combien de temps faut-il pour qu'un incident soit résolu ?"
+              answer="Le délai varie selon le type d'incident et la ville. En moyenne, 70% des signalements sont traités dans les 7 jours. Vous pouvez suivre le progrès en temps réel sur votre tableau de bord."
+            />
+            <FAQItem
+              question="Puis-je signaler anonymement ?"
+              answer="Oui, vous pouvez choisir de faire un signalement anonyme. Cependant, créer un compte vous permet de suivre vos signalements et de gagner des points de reconnaissance."
+            />
+          </div>
+        </div>
+      </section>
+
+      {/* CTA Section */}
+      <section className="cta-modern animate-on-scroll">
+        <div className="container">
+          <div className="cta-content">
+            <h2>Prêt à Transformer Votre Ville ?</h2>
+            <p>
+              Rejoignez des milliers de citoyens engagés et faites la différence
+              dès aujourd'hui
+            </p>
+            <div className="cta-actions">
+              <button className="btn-cta-primary" onClick={onLoginClick}>
+                <Zap size={20} />
+                Commencer Gratuitement
+              </button>
+              <div className="cta-info">
+                <div className="info-item">
+                  <Phone size={16} />
+                  <span>+212 50293402</span>
+                </div>
+                <div className="info-item">
+                  <Mail size={16} />
+                  <span>contact@medinati360.ma</span>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      {/* Footer */}
+      <footer className="footer-modern">
+        <div className="container">
+          <div className="footer-content">
+            <div className="footer-section">
+              <LogoComponent />
+              <p>
+                La plateforme citoyenne qui transforme la façon dont nous
+                améliorons nos villes.
+              </p>
+              <div className="social-links">
+                <a href="#" aria-label="Twitter">
+                  <Twitter size={20} />
+                </a>
+                <a href="#" aria-label="Facebook">
+                  <Facebook size={20} />
+                </a>
+                <a href="#" aria-label="Instagram">
+                  <Instagram size={20} />
+                </a>
+                <a href="#" aria-label="LinkedIn">
+                  <Linkedin size={20} />
+                </a>
+              </div>
+            </div>
+
+            <div className="footer-section">
+              <h4>Produit</h4>
+              <a href="#features">Fonctionnalités</a>
+              <a href="#how-it-works">Comment ça marche</a>
+              <a href="#testimonials">Témoignages</a>
+              <a href="#faq">FAQ</a>
+            </div>
+
+            <div className="footer-section">
+              <h4>Société</h4>
+              <a href="#about">À propos</a>
+              <a href="#">Blog</a>
+              <a href="#">Carrières</a>
+              <a href="#">Contact</a>
+            </div>
+
+            <div className="footer-section">
+              <h4>Support</h4>
+              <a href="#">Centre d'aide</a>
+              <a href="#">Politique de confidentialité</a>
+              <a href="#">Conditions d'utilisation</a>
+              <a href="#">Status</a>
+            </div>
+          </div>
+
+          <div className="footer-bottom">
+            <p>© 2024 Medinati360. Tous droits réservés.</p>
+            <p>Fait avec ❤️ pour les citoyens marocains</p>
           </div>
         </div>
       </footer>
@@ -11140,66 +12420,512 @@ export default LandingPage;
 
 
 ============================================================
+FILE: frontend/src/pages/Map/IncidentMap.css
+============================================================
+/* --- General Map Wrapper --- */
+.map-wrapper {
+    position: relative;
+    height: calc(100vh - 64px);
+    width: 100%;
+    overflow: hidden;
+    border-radius: 16px;
+    box-shadow: 0 20px 50px -10px rgba(0, 0, 0, 0.2);
+}
+
+/* --- Leaflet Control Styling --- */
+.leaflet-control-layers,
+.leaflet-control-zoom,
+.leaflet-bar {
+    background: rgba(255, 255, 255, 0.85) !important;
+    backdrop-filter: blur(12px);
+    -webkit-backdrop-filter: blur(12px);
+    border-radius: 10px !important;
+    border: 1px solid rgba(0, 0, 0, 0.05) !important;
+    box-shadow: 0 8px 25px rgba(0, 0, 0, 0.1) !important;
+}
+
+.leaflet-control-layers-toggle {
+    width: 36px !important;
+    height: 36px !important;
+}
+
+.leaflet-bar a {
+    background-color: transparent !important;
+    width: 36px !important;
+    height: 36px !important;
+    line-height: 36px !important;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+/* --- Custom Reset View Control --- */
+.reset-view-control {
+    margin-left: 10px;
+    /* Position next to zoom control */
+}
+
+.reset-view-control a {
+    color: #333;
+    cursor: pointer;
+}
+
+/* --- Custom Marker Styling --- */
+.modern-marker-wrapper {
+    background: transparent !important;
+    border: none !important;
+}
+
+.modern-marker {
+    position: relative;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: var(--marker-size);
+    height: var(--marker-size);
+    background: rgba(255, 255, 255, 0.9);
+    backdrop-filter: blur(10px);
+    border-radius: 50%;
+    border: 2px solid var(--category-color);
+    box-shadow: 0 0 0 2px white, 0 10px 30px -5px rgba(0, 0, 0, 0.2),
+        0 0 25px -5px var(--category-color);
+    cursor: pointer;
+    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.modern-marker:hover {
+    transform: scale(1.2) !important;
+    z-index: 1001 !important;
+}
+
+.modern-marker-status {
+    position: absolute;
+    top: -4px;
+    right: -4px;
+    width: 20px;
+    height: 20px;
+    background: var(--status-color);
+    border: 2px solid white;
+    border-radius: 50%;
+    box-shadow: 0 2px 10px rgba(0, 0, 0, 0.2);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 10px;
+}
+
+/* --- Marker Cluster Custom Styling --- */
+.marker-cluster-custom {
+    background: rgba(255, 255, 255, 0.85);
+    backdrop-filter: blur(12px);
+    border: 3px solid #6366f1;
+    border-radius: 50%;
+    color: #4338ca;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-weight: bold;
+    font-size: 14px;
+    box-shadow: 0 0 0 3px rgba(99, 102, 241, 0.4), 0 5px 15px rgba(0, 0, 0, 0.15);
+    transition: all 0.2s ease-in-out;
+}
+
+.marker-cluster-custom:hover {
+    background: #6366f1;
+    color: white;
+}
+
+.marker-cluster-custom div {
+    width: 100%;
+    height: 100%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+/* --- Custom Popup Styling --- */
+.modern-popup .leaflet-popup-content-wrapper {
+    background: transparent;
+    border: none;
+    box-shadow: none;
+    padding: 0;
+}
+
+.modern-popup .leaflet-popup-content {
+    margin: 0;
+    width: auto !important;
+}
+
+.modern-popup .leaflet-popup-tip-container {
+    display: none;
+    /* We hide the default tip for a cleaner look */
+}
+
+.modern-popup-container {
+    font-family: system-ui, -apple-system, sans-serif;
+    min-width: 320px;
+    max-width: 400px;
+    background: rgba(255, 255, 255, 0.95);
+    backdrop-filter: blur(20px);
+    -webkit-backdrop-filter: blur(20px);
+    border-radius: 16px;
+    overflow: hidden;
+    border: 1px solid rgba(255, 255, 255, 0.2);
+    box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.25);
+}
+
+.modern-popup-header {
+    background: linear-gradient(135deg, var(--category-color) 0%, var(--status-color) 100%);
+    color: white;
+    padding: 20px;
+    position: relative;
+}
+
+.modern-popup-close-btn {
+    position: absolute;
+    top: 12px;
+    right: 12px;
+    background: rgba(255, 255, 255, 0.2);
+    border: none;
+    border-radius: 50%;
+    width: 32px;
+    height: 32px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    color: white;
+    transition: background 0.2s;
+}
+
+.modern-popup-close-btn:hover {
+    background: rgba(255, 255, 255, 0.3);
+}
+
+.modern-popup-header-content {
+    display: flex;
+    align-items: center;
+    gap: 16px;
+}
+
+.modern-popup-icon-wrapper {
+    font-size: 32px;
+    background: rgba(255, 255, 255, 0.2);
+    border-radius: 12px;
+    padding: 8px;
+    backdrop-filter: blur(10px);
+}
+
+.modern-popup-title {
+    margin: 0 0 4px 0;
+    font-size: 18px;
+    font-weight: 700;
+    line-height: 1.2;
+}
+
+.modern-popup-category {
+    background: rgba(255, 255, 255, 0.25);
+    padding: 4px 12px;
+    border-radius: 20px;
+    font-size: 12px;
+    font-weight: 500;
+    backdrop-filter: blur(10px);
+    display: inline-block;
+}
+
+.modern-popup-body {
+    padding: 24px;
+}
+
+.modern-popup-description {
+    margin: 0 0 20px 0;
+    font-size: 15px;
+    color: #4B5563;
+    line-height: 1.6;
+    background: #F9FAFB;
+    padding: 16px;
+    border-radius: 12px;
+    border: 1px solid #E5E7EB;
+}
+
+
+.modern-popup-details-btn {
+    width: 100%;
+    padding: 14px 20px;
+    background: linear-gradient(135deg, var(--category-color) 0%, var(--status-color) 100%);
+    color: white;
+    border: none;
+    border-radius: 12px;
+    font-size: 15px;
+    font-weight: 600;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    transition: transform 0.2s, box-shadow 0.2s;
+}
+
+.modern-popup-details-btn:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 10px 20px rgba(0, 0, 0, 0.1);
+}
+
+============================================================
 FILE: frontend/src/pages/Map/IncidentMap.jsx
 ============================================================
-// frontend/src/pages/Map/IncidentMap.jsx
-
-import React from "react";
-import { MapContainer, TileLayer, Marker, Popup } from "react-leaflet";
-import "leaflet/dist/leaflet.css";
+import React, { useState, useMemo, useRef } from "react";
+import {
+  MapContainer,
+  TileLayer,
+  Marker,
+  Popup,
+  LayersControl,
+  useMap,
+} from "react-leaflet";
 import L from "leaflet";
-import markerIcon2x from "leaflet/dist/images/marker-icon-2x.png";
-import markerIcon from "leaflet/dist/images/marker-icon.png";
-import markerShadow from "leaflet/dist/images/marker-shadow.png";
+import MarkerClusterGroup from "react-leaflet-markercluster";
+import { Info, X, Home } from "lucide-react";
 
-// Fix for default icon issue
-delete L.Icon.Default.prototype._getIconUrl;
-L.Icon.Default.mergeOptions({
-  iconRetinaUrl: markerIcon2x,
-  iconUrl: markerIcon,
-  shadowUrl: markerShadow,
-});
+// Import necessary CSS
+import "leaflet/dist/leaflet.css";
+import "leaflet.markercluster/dist/MarkerCluster.css";
+import "leaflet.markercluster/dist/MarkerCluster.Default.css";
+import "./IncidentMap.css";
 
-const IncidentMap = ({ incidents }) => {
-  const initialPosition = [34.020882, -6.84165]; // Centered on Rabat
+// --- (Keep all your helper functions and sub-components exactly as they are) ---
+// getCategoryConfig, getStatusConfig, createModernMarker, ModernPopup, etc.
+// ... (no changes needed for these parts)
+const getCategoryConfig = (categoryName = "") => {
+  const configs = {
+    Voirie: { icon: "🛣️", color: "#8B5CF6", name: "Voirie" },
+    Trottoirs: { icon: "🚶‍♀️", color: "#06B6D4", name: "Trottoirs" },
+    Éclairage: { icon: "💡", color: "#F59E0B", name: "Éclairage" },
+    Déchets: { icon: "🗑️", color: "#EF4444", name: "Déchets" },
+    "Espaces Verts": { icon: "🌳", color: "#10B981", name: "Espaces Verts" },
+    Nuisances: { icon: "🔊", color: "#F97316", name: "Nuisances" },
+    Eau: { icon: "💧", color: "#3B82F6", name: "Eau et Assainissement" },
+    Mobilier: { icon: "🏦", color: "#6B7280", name: "Mobilier Urbain" },
+    Transport: { icon: "🚎", color: "#EC4899", name: "Transport Public" },
+    Signalisation: { icon: "🚦", color: "#DC2626", name: "Signalisation" },
+    Animaux: { icon: "🐕", color: "#92400E", name: "Animaux Errants" },
+    Bâtiments: { icon: "🏗️", color: "#7C3AED", name: "Constructions" },
+  };
+  for (const [key, config] of Object.entries(configs)) {
+    if (categoryName.includes(key)) return config;
+  }
+  return { icon: "📋", color: "#6B7280", name: "Autre" };
+};
 
-  // Filter for incidents that have valid coordinates
-  const incidentsWithLocation = incidents.filter(
-    (incident) => incident.latitude && incident.longitude
+const getStatusConfig = (status = "Reçu") => {
+  const statusConfigs = {
+    Résolu: { color: "#10B981", icon: "✅" },
+    "En cours": { color: "#F59E0B", icon: "⏳" },
+    Reçu: { color: "#3B82F6", icon: "🆕" },
+  };
+  return statusConfigs[status] || statusConfigs["Reçu"];
+};
+
+const createModernMarker = (incident, isSelected = false) => {
+  const categoryConfig = getCategoryConfig(incident.category?.name);
+  const statusConfig = getStatusConfig(incident.status);
+  const size = isSelected ? 52 : 42;
+  const style = `
+    --marker-size: ${size}px;
+    --category-color: ${categoryConfig.color};
+    --status-color: ${statusConfig.color};
+    font-size: ${isSelected ? "22px" : "18px"};
+    z-index: ${isSelected ? 1000 : "auto"};
+    transform: ${isSelected ? "scale(1.15)" : "scale(1)"};
+  `;
+  const markerHtml = `<div class="modern-marker" style="${style}">${categoryConfig.icon}<div class="modern-marker-status">${statusConfig.icon}</div></div>`;
+  return L.divIcon({
+    html: markerHtml,
+    className: "modern-marker-wrapper",
+    iconSize: [size, size],
+    iconAnchor: [size / 2, size],
+    popupAnchor: [0, -size],
+  });
+};
+
+const ModernPopup = ({ incident, onViewDetails, onClose }) => {
+  const categoryConfig = getCategoryConfig(incident.category?.name);
+  const statusConfig = getStatusConfig(incident.status);
+  const popupStyle = {
+    "--category-color": categoryConfig.color,
+    "--status-color": statusConfig.color,
+  };
+  return (
+    <div className="modern-popup-container" style={popupStyle}>
+      <div className="modern-popup-header">
+        <button onClick={onClose} className="modern-popup-close-btn">
+          <X size={16} />
+        </button>
+        <div className="modern-popup-header-content">
+          <div className="modern-popup-icon-wrapper">{categoryConfig.icon}</div>
+          <div>
+            <h3 className="modern-popup-title">{incident.title}</h3>
+            <div className="modern-popup-category">{categoryConfig.name}</div>
+          </div>
+        </div>
+      </div>
+      <div className="modern-popup-body">
+        <p className="modern-popup-description">
+          {incident.description.length > 120
+            ? incident.description.substring(0, 120) + "..."
+            : incident.description}
+        </p>
+        <button
+          onClick={() => onViewDetails && onViewDetails(incident)}
+          className="modern-popup-details-btn"
+        >
+          <Info size={16} /> Voir les détails
+        </button>
+      </div>
+    </div>
   );
+};
+
+const MapController = ({ selectedIncident }) => {
+  const map = useMap();
+  React.useEffect(() => {
+    if (
+      selectedIncident &&
+      selectedIncident.latitude &&
+      selectedIncident.longitude
+    ) {
+      const { latitude, longitude } = selectedIncident;
+      map.flyTo([latitude, longitude], 16, { animate: true, duration: 1.5 });
+    }
+  }, [selectedIncident, map]);
+  return null;
+};
+
+const ResetViewControl = ({ initialPosition }) => {
+  const map = useMap();
+  const resetView = () => {
+    map.flyTo(initialPosition, 13, { animate: true, duration: 1.5 });
+  };
+  return (
+    <div className="leaflet-control leaflet-bar reset-view-control">
+      <a onClick={resetView} title="Reset View">
+        <Home size={16} />
+      </a>
+    </div>
+  );
+};
+
+// --- MAIN MAP COMPONENT ---
+
+const IncidentMap = ({ incidents = [], onViewDetails }) => {
+  const [selectedIncident, setSelectedIncident] = useState(null);
+  const initialPosition = [34.0375, -6.8361]; // Center of Salé
+  const mapRef = useRef();
+
+  const filteredIncidents = useMemo(() => {
+    return incidents.filter(
+      (incident) =>
+        incident.latitude &&
+        incident.longitude &&
+        !isNaN(parseFloat(incident.latitude)) &&
+        !isNaN(parseFloat(incident.longitude))
+    );
+  }, [incidents]);
+
+  // The access token from your Jawg example
+  const jawgAccessToken =
+    "vGb8Gys89JlZwsZpZzyFind8wdUugDcC16RsZWo5VFgqU5fhzO9RL1xwRkOPcowX";
+  // The Style ID from your Jawg example URL
+  const jawgStyleId = "53c8f749-adbb-466a-a22d-a135f553f6fb";
 
   return (
-    <div
-      className="map-container"
-      style={{
-        height: "calc(100vh - 110px)",
-        width: "100%",
-        borderRadius: "12px",
-        overflow: "hidden",
-      }}
-    >
+    <div className="map-wrapper">
       <MapContainer
         center={initialPosition}
-        zoom={13}
+        zoom={14} // A bit closer to see Salé details
         style={{ height: "100%", width: "100%" }}
+        zoomControl={true}
+        ref={mapRef}
       >
-        <TileLayer
-          url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
-          attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
-        />
+        <LayersControl position="topright">
+          {/***************************************************************/}
+          {/* START OF CHANGES: Here is your new custom style           */}
+          {/***************************************************************/}
+          <LayersControl.BaseLayer checked name="Style Personnalisé">
+            <TileLayer
+              url={`https://tile.jawg.io/${jawgStyleId}/{z}/{x}/{y}.png?access-token=${jawgAccessToken}`}
+              attribution='<a href="http://jawg.io" title="Tiles Courtesy of Jawg Maps" target="_blank">&copy; <b>Jawg</b>Maps</a> &copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
+            />
+          </LayersControl.BaseLayer>
+          {/***************************************************************/}
+          {/* END OF CHANGES                                            */}
+          {/***************************************************************/}
 
-        {incidentsWithLocation.map((incident) => (
-          <Marker
-            key={incident.id}
-            position={[incident.latitude, incident.longitude]}
-          >
-            <Popup>
-              <strong>{incident.title}</strong>
-              <p>{incident.category?.name || "Sans catégorie"}</p>
-              <small>Signalé par: {incident.user?.name || "Anonyme"}</small>
-            </Popup>
-          </Marker>
-        ))}
+          <LayersControl.BaseLayer name="Moderne">
+            <TileLayer
+              url="https://{s}.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}{r}.png"
+              attribution="&copy; OpenStreetMap &copy; CARTO"
+            />
+          </LayersControl.BaseLayer>
+          <LayersControl.BaseLayer name="Satellite">
+            <TileLayer
+              url="https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}"
+              attribution="&copy; Esri &mdash; i-cubed, USDA, USGS, AEX, GeoEye, Getmapping, Aerogrid, IGN, IGP, UPR-EGP, and the GIS User Community"
+            />
+          </LayersControl.BaseLayer>
+          <LayersControl.BaseLayer name="Sombre">
+            <TileLayer
+              url="https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png"
+              attribution="&copy; OpenStreetMap &copy; CARTO"
+            />
+          </LayersControl.BaseLayer>
+        </LayersControl>
+
+        <MapController selectedIncident={selectedIncident} />
+        <ResetViewControl initialPosition={initialPosition} />
+
+        <MarkerClusterGroup
+          chunkedLoading
+          iconCreateFunction={(cluster) => {
+            const count = cluster.getChildCount();
+            return L.divIcon({
+              html: `<div><span>${count}</span></div>`,
+              className: "marker-cluster-custom",
+              iconSize: L.point(40, 40, true),
+            });
+          }}
+        >
+          {filteredIncidents.map((incident) => (
+            <Marker
+              key={incident.id}
+              position={[
+                parseFloat(incident.latitude),
+                parseFloat(incident.longitude),
+              ]}
+              icon={createModernMarker(
+                incident,
+                selectedIncident?.id === incident.id
+              )}
+              eventHandlers={{
+                click: () => setSelectedIncident(incident),
+              }}
+            >
+              <Popup
+                maxWidth={400}
+                className="modern-popup"
+                closeButton={false}
+                autoClose={false}
+                closeOnClick={false}
+              >
+                <ModernPopup
+                  incident={incident}
+                  onViewDetails={onViewDetails}
+                  onClose={() => setSelectedIncident(null)}
+                />
+              </Popup>
+            </Marker>
+          ))}
+        </MarkerClusterGroup>
       </MapContainer>
     </div>
   );
@@ -11672,19 +13398,26 @@ import {
   CheckCircle,
   XCircle,
   AlertCircle,
-  Eye,
+  Edit,
+  Trash2,
   Calendar,
   RefreshCw,
 } from "lucide-react";
 import { useAuth } from "../../hooks/useAuth";
 import apiService from "../../services/apiService";
+// We reuse the ReportIncident component for editing, as it's a very similar form
+import ReportIncident from "../../components/ReportIncident/ReportIncident";
 import "./MyIncidents.css";
 
-const MyIncidents = ({ onViewDetails }) => {
+const MyIncidents = () => {
   const { user } = useAuth();
   const [incidents, setIncidents] = useState([]);
   const [loading, setLoading] = useState(true);
   const [filter, setFilter] = useState("all");
+
+  // State for modals
+  const [editingIncident, setEditingIncident] = useState(null);
+  const [deletingIncident, setDeletingIncident] = useState(null);
 
   const loadMyIncidents = async () => {
     if (!user) return;
@@ -11703,27 +13436,40 @@ const MyIncidents = ({ onViewDetails }) => {
     loadMyIncidents();
   }, [user]);
 
+  const handleEditSuccess = () => {
+    setEditingIncident(null);
+    loadMyIncidents(); // Refresh list after editing
+  };
+
+  const handleConfirmDelete = async () => {
+    if (!deletingIncident) return;
+    try {
+      await apiService.incidents.delete(deletingIncident.id);
+      setDeletingIncident(null);
+      loadMyIncidents(); // Refresh list after deleting
+    } catch (error) {
+      alert("Erreur lors de la suppression: " + error.message);
+    }
+  };
+
   const getStatusBadge = (incident) => {
     if (incident.is_approved) {
       return (
         <div className="status-badge approved">
-          <CheckCircle size={16} />
-          <span>Approuvé</span>
+          <CheckCircle size={16} /> <span>Approuvé</span>
         </div>
       );
     }
     if (incident.rejection_reason) {
       return (
         <div className="status-badge rejected">
-          <XCircle size={16} />
-          <span>Rejeté</span>
+          <XCircle size={16} /> <span>Rejeté</span>
         </div>
       );
     }
     return (
       <div className="status-badge pending">
-        <Clock size={16} />
-        <span>En attente</span>
+        <Clock size={16} /> <span>En attente</span>
       </div>
     );
   };
@@ -11751,7 +13497,7 @@ const MyIncidents = ({ onViewDetails }) => {
         <div>
           <h1>Mes signalements</h1>
           <p className="page-subtitle">
-            Suivez l'état de vos incidents signalés
+            Suivez, modifiez ou supprimez vos incidents en attente.
           </p>
         </div>
         <button
@@ -11800,43 +13546,104 @@ const MyIncidents = ({ onViewDetails }) => {
           <div className="empty-state">
             <AlertCircle size={48} />
             <h3>Aucun signalement à afficher</h3>
-            <p>
-              Vos signalements apparaîtront ici une fois que vous les aurez
-              créés.
-            </p>
+            <p>Vos signalements apparaîtront ici.</p>
           </div>
         ) : (
-          filteredIncidents.map((incident) => (
-            <div key={incident.id} className="my-incident-card">
-              <div className="incident-card-header">
-                <div className="incident-main-info">
-                  <h3>{incident.title}</h3>
+          filteredIncidents.map((incident) => {
+            const isPending =
+              !incident.is_approved && !incident.rejection_reason;
+            return (
+              <div key={incident.id} className="my-incident-card">
+                <div className="incident-card-header">
+                  <div className="incident-main-info">
+                    <h3>{incident.title}</h3>
+                  </div>
+                  {getStatusBadge(incident)}
                 </div>
-                {getStatusBadge(incident)}
+                <div className="incident-meta">
+                  <div className="meta-item">
+                    <Calendar size={16} />
+                    <span>
+                      {new Date(incident.created_at).toLocaleDateString(
+                        "fr-FR"
+                      )}
+                    </span>
+                  </div>
+                  <div className="meta-item">
+                    <span className="category-tag">
+                      {incident.category?.name || "Sans catégorie"}
+                    </span>
+                  </div>
+                </div>
+
+                {isPending ? (
+                  <div className="incident-actions">
+                    <button
+                      className="btn-action btn-edit"
+                      onClick={() => setEditingIncident(incident)}
+                    >
+                      <Edit size={16} /> Modifier
+                    </button>
+                    <button
+                      className="btn-action btn-delete"
+                      onClick={() => setDeletingIncident(incident)}
+                    >
+                      <Trash2 size={16} /> Supprimer
+                    </button>
+                  </div>
+                ) : (
+                  <p className="review-status-text">
+                    Cet incident a été traité et ne peut plus être modifié.
+                  </p>
+                )}
               </div>
-              <div className="incident-meta">
-                <div className="meta-item">
-                  <Calendar size={16} />
-                  <span>
-                    {new Date(incident.created_at).toLocaleDateString("fr-FR")}
-                  </span>
-                </div>
-                <div className="meta-item">
-                  <span className="category-tag">
-                    {incident.category?.name || "Sans catégorie"}
-                  </span>
-                </div>
-              </div>
-              <button
-                className="btn-view-details"
-                onClick={() => onViewDetails(incident)}
-              >
-                <Eye size={16} /> Voir les détails
-              </button>
-            </div>
-          ))
+            );
+          })
         )}
       </div>
+
+      {/* Edit Incident Modal */}
+      {editingIncident && (
+        <ReportIncident
+          onClose={() => setEditingIncident(null)}
+          onSuccess={handleEditSuccess}
+          incidentToEdit={editingIncident} // Pass incident data to the form
+        />
+      )}
+
+      {/* Delete Confirmation Modal */}
+      {deletingIncident && (
+        <div
+          className="modal-overlay"
+          onClick={() => setDeletingIncident(null)}
+        >
+          <div className="modal" onClick={(e) => e.stopPropagation()}>
+            <h2>Confirmer la Suppression</h2>
+            <div className="modal-content">
+              <p>
+                Êtes-vous sûr de vouloir supprimer définitivement cet incident ?
+              </p>
+              <p>
+                <strong>{deletingIncident.title}</strong>
+              </p>
+            </div>
+            <div className="modal-actions">
+              <button
+                className="btn-cancel"
+                onClick={() => setDeletingIncident(null)}
+              >
+                Annuler
+              </button>
+              <button
+                className="btn-confirm-reject"
+                onClick={handleConfirmDelete}
+              >
+                Supprimer
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 };
@@ -12248,6 +14055,29 @@ const incidents = {
             is_approved: i.is_approved === true || i.is_approved === 1,
         }));
     },
+    update: async (id, payload) => {
+        const fd = new FormData();
+        Object.entries(payload).forEach(([k, v]) => {
+            if (v !== null && v !== undefined) fd.append(k, v);
+        });
+        // We use POST with a _method field for full compatibility with file uploads.
+        fd.append('_method', 'PUT');
+
+        const res = await fetch(`${API_BASE_URL}/incidents/${id}`, {
+            method: 'POST', // Note: Still POST
+            headers: getHeaders(true), // isFormData = true
+            body: fd,
+        });
+        return handleResponse(res);
+    },
+
+    delete: async (id) => {
+        const res = await fetch(`${API_BASE_URL}/incidents/${id}`, {
+            method: 'DELETE',
+            headers: getHeaders(),
+        });
+        return handleResponse(res);
+    },
 
 };
 
@@ -12514,7 +14344,12 @@ function AppContent() {
           />
         );
       case "map":
-        return <IncidentMap incidents={incidents} />;
+        return (
+          <IncidentMap
+            incidents={incidents}
+            onViewDetails={handleViewDetails}
+          />
+        );
       case "profile":
         return (
           <div className="profile-page">
@@ -12773,10 +14608,12 @@ FILE: frontend/package.json
     "class-variance-authority": "^0.7.1",
     "clsx": "^2.1.1",
     "leaflet": "^1.9.4",
+    "leaflet.markercluster": "^1.5.3",
     "lucide-react": "^0.525.0",
     "react": "^19.1.0",
     "react-dom": "^19.1.0",
     "react-leaflet": "^5.0.0",
+    "react-leaflet-markercluster": "^5.0.0-rc.0",
     "recharts": "^3.1.0",
     "tailwind-merge": "^3.3.1",
     "tailwindcss-animate": "^1.0.7"

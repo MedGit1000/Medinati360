@@ -5,17 +5,18 @@ import {
   XCircle,
   Clock,
   AlertCircle,
-  Eye,
   RefreshCw,
+  Edit,
+  Trash2,
 } from "lucide-react";
 import apiService from "../../services/apiService";
+import ReportIncident from "../../components/ReportIncident/ReportIncident"; // Import the form modal
 import "./AdminPanel.css";
 
 const AdminPanel = () => {
   const [incidents, setIncidents] = useState([]);
   const [loading, setLoading] = useState(true);
   const [filter, setFilter] = useState("pending");
-  const [selectedIncident, setSelectedIncident] = useState(null);
   const [rejectionReason, setRejectionReason] = useState("");
   const [stats, setStats] = useState({
     all: 0,
@@ -23,6 +24,11 @@ const AdminPanel = () => {
     approved: 0,
     rejected: 0,
   });
+
+  // State for modals
+  const [rejectingIncident, setRejectingIncident] = useState(null);
+  const [editingIncident, setEditingIncident] = useState(null);
+  const [deletingIncident, setDeletingIncident] = useState(null);
 
   useEffect(() => {
     loadIncidents();
@@ -46,7 +52,6 @@ const AdminPanel = () => {
 
       if (response.ok) {
         const data = await response.json();
-        console.log(`Loaded ${filter} incidents:`, data.length);
         setIncidents(data);
       } else {
         console.error("API Error:", response.status, response.statusText);
@@ -63,7 +68,6 @@ const AdminPanel = () => {
   const loadStats = async () => {
     try {
       const token = localStorage.getItem("auth_token");
-
       const requests = ["all", "pending", "approved", "rejected"].map(
         (status) =>
           fetch(
@@ -92,19 +96,9 @@ const AdminPanel = () => {
 
   const handleApprove = async (id) => {
     try {
-      await apiService.incidents.approve(id); // <-- USE THE API SERVICE
-
-      // Show success message
-      const successDiv = document.createElement("div");
-      successDiv.className = "success-toast";
-      successDiv.textContent = "✓ Incident approuvé avec succès";
-      document.body.appendChild(successDiv);
-      setTimeout(() => successDiv.remove(), 3000);
-
-      // Reload data
+      await apiService.incidents.approve(id);
       loadIncidents();
       loadStats();
-      setSelectedIncident(null);
     } catch (error) {
       console.error("Approval failed:", error);
       alert(error.message || "Erreur lors de l'approbation");
@@ -116,25 +110,33 @@ const AdminPanel = () => {
       alert("Veuillez indiquer une raison de rejet");
       return;
     }
-
     try {
-      await apiService.incidents.reject(id, rejectionReason); // <-- USE THE API SERVICE
-
-      // Show success message
-      const successDiv = document.createElement("div");
-      successDiv.className = "success-toast";
-      successDiv.textContent = "✓ Incident rejeté";
-      document.body.appendChild(successDiv);
-      setTimeout(() => successDiv.remove(), 3000);
-
-      // Reload data
+      await apiService.incidents.reject(id, rejectionReason);
       loadIncidents();
       loadStats();
-      setSelectedIncident(null);
+      setRejectingIncident(null);
       setRejectionReason("");
     } catch (error) {
       console.error("Rejection failed:", error);
       alert(error.message || "Erreur lors du rejet");
+    }
+  };
+
+  const handleEditSuccess = () => {
+    setEditingIncident(null);
+    loadIncidents();
+    loadStats();
+  };
+
+  const handleConfirmDelete = async () => {
+    if (!deletingIncident) return;
+    try {
+      await apiService.incidents.delete(deletingIncident.id);
+      setDeletingIncident(null);
+      loadIncidents();
+      loadStats();
+    } catch (error) {
+      alert("Erreur lors de la suppression: " + error.message);
     }
   };
 
@@ -170,7 +172,6 @@ const AdminPanel = () => {
         </button>
       </div>
 
-      {/* Stats Cards */}
       <div className="admin-stats">
         <div className="stat-card pending">
           <Clock size={32} />
@@ -195,7 +196,6 @@ const AdminPanel = () => {
         </div>
       </div>
 
-      {/* Filter Tabs */}
       <div className="filter-tabs">
         <button
           className={filter === "pending" ? "active" : ""}
@@ -223,7 +223,6 @@ const AdminPanel = () => {
         </button>
       </div>
 
-      {/* Incidents List */}
       <div className="incidents-list">
         {loading ? (
           <div className="loading">
@@ -233,16 +232,7 @@ const AdminPanel = () => {
         ) : incidents.length === 0 ? (
           <div className="empty-state">
             <AlertCircle size={48} />
-            <p>
-              Aucun incident{" "}
-              {filter === "pending"
-                ? "en attente"
-                : filter === "approved"
-                ? "approuvé"
-                : filter === "rejected"
-                ? "rejeté"
-                : ""}
-            </p>
+            <p>Aucun incident à afficher dans cette catégorie.</p>
           </div>
         ) : (
           incidents.map((incident) => (
@@ -253,9 +243,7 @@ const AdminPanel = () => {
                   {getStatusText(incident)}
                 </span>
               </div>
-
               <p className="incident-description">{incident.description}</p>
-
               <div className="incident-meta">
                 <span>
                   <strong>Par:</strong>{" "}
@@ -277,28 +265,6 @@ const AdminPanel = () => {
                 </span>
               </div>
 
-              {/* Location info if available */}
-              {incident.latitude && incident.longitude && (
-                <div className="incident-location">
-                  <strong>Localisation:</strong> {incident.latitude.toFixed(6)},{" "}
-                  {incident.longitude.toFixed(6)}
-                </div>
-              )}
-
-              {/* Status info */}
-              {incident.status && (
-                <div className="incident-status">
-                  <strong>Statut de traitement:</strong>
-                  <span
-                    className={`treatment-status ${incident.status
-                      .toLowerCase()
-                      .replace(/\s/g, "-")}`}
-                  >
-                    {incident.status}
-                  </span>
-                </div>
-              )}
-
               {/* Action buttons for pending incidents */}
               {!incident.is_approved && !incident.rejection_reason && (
                 <div className="action-buttons">
@@ -306,82 +272,69 @@ const AdminPanel = () => {
                     className="btn-approve"
                     onClick={() => handleApprove(incident.id)}
                   >
-                    <CheckCircle size={16} />
-                    Approuver
+                    <CheckCircle size={16} /> Approuver
                   </button>
                   <button
                     className="btn-reject"
-                    onClick={() => setSelectedIncident(incident)}
+                    onClick={() => setRejectingIncident(incident)}
                   >
-                    <XCircle size={16} />
-                    Rejeter
+                    <XCircle size={16} /> Rejeter
                   </button>
                 </div>
               )}
 
-              {/* Rejection info */}
+              {/* Admin management buttons */}
+              <div className="action-buttons admin-actions">
+                <button
+                  className="btn-action btn-edit"
+                  onClick={() => setEditingIncident(incident)}
+                >
+                  <Edit size={16} /> Modifier
+                </button>
+                <button
+                  className="btn-action btn-delete"
+                  onClick={() => setDeletingIncident(incident)}
+                >
+                  <Trash2 size={16} /> Supprimer
+                </button>
+              </div>
+
               {incident.rejection_reason && (
                 <div className="rejection-info">
                   <strong>Raison du rejet:</strong> {incident.rejection_reason}
-                  {incident.approved_by && incident.approved_at && (
-                    <div className="rejection-meta">
-                      Rejeté par {incident.approvedBy?.name} le{" "}
-                      {new Date(incident.approved_at).toLocaleDateString(
-                        "fr-FR"
-                      )}
-                    </div>
-                  )}
                 </div>
               )}
-
-              {/* Approval info */}
-              {incident.is_approved &&
-                incident.approved_by &&
-                incident.approved_at && (
-                  <div className="approval-info">
-                    Approuvé par {incident.approvedBy?.name} le{" "}
-                    {new Date(incident.approved_at).toLocaleDateString("fr-FR")}
-                  </div>
-                )}
             </div>
           ))
         )}
       </div>
 
       {/* Rejection Modal */}
-      {selectedIncident && (
+      {rejectingIncident && (
         <div
           className="modal-overlay"
           onClick={() => {
-            setSelectedIncident(null);
+            setRejectingIncident(null);
             setRejectionReason("");
           }}
         >
           <div className="modal" onClick={(e) => e.stopPropagation()}>
             <h2>Rejeter l'incident</h2>
-            <div className="modal-content">
-              <p>
-                <strong>Titre:</strong> {selectedIncident.title}
-              </p>
-              <p>
-                <strong>Description:</strong> {selectedIncident.description}
-              </p>
-              <div className="form-group">
-                <label>Raison du rejet:</label>
-                <textarea
-                  placeholder="Indiquez la raison du rejet..."
-                  value={rejectionReason}
-                  onChange={(e) => setRejectionReason(e.target.value)}
-                  rows={4}
-                  autoFocus
-                />
-              </div>
-            </div>
+            <p>
+              <strong>Titre:</strong> {rejectingIncident.title}
+            </p>
+            <textarea
+              placeholder="Indiquez la raison du rejet..."
+              value={rejectionReason}
+              onChange={(e) => setRejectionReason(e.target.value)}
+              rows={4}
+              autoFocus
+            />
             <div className="modal-actions">
               <button
                 className="btn-cancel"
                 onClick={() => {
-                  setSelectedIncident(null);
+                  setRejectingIncident(null);
                   setRejectionReason("");
                 }}
               >
@@ -389,10 +342,52 @@ const AdminPanel = () => {
               </button>
               <button
                 className="btn-confirm-reject"
-                onClick={() => handleReject(selectedIncident.id)}
+                onClick={() => handleReject(rejectingIncident.id)}
                 disabled={!rejectionReason.trim()}
               >
                 Confirmer le rejet
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Edit Incident Modal */}
+      {editingIncident && (
+        <ReportIncident
+          onClose={() => setEditingIncident(null)}
+          onSuccess={handleEditSuccess}
+          incidentToEdit={editingIncident}
+        />
+      )}
+
+      {/* Delete Confirmation Modal */}
+      {deletingIncident && (
+        <div
+          className="modal-overlay"
+          onClick={() => setDeletingIncident(null)}
+        >
+          <div className="modal" onClick={(e) => e.stopPropagation()}>
+            <h2>Confirmer la Suppression</h2>
+            <p>
+              Êtes-vous sûr de vouloir supprimer définitivement l'incident
+              suivant ? Cette action est irréversible.
+            </p>
+            <p>
+              <strong>{deletingIncident.title}</strong>
+            </p>
+            <div className="modal-actions">
+              <button
+                className="btn-cancel"
+                onClick={() => setDeletingIncident(null)}
+              >
+                Annuler
+              </button>
+              <button
+                className="btn-confirm-reject"
+                onClick={handleConfirmDelete}
+              >
+                Supprimer
               </button>
             </div>
           </div>

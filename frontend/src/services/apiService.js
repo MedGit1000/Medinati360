@@ -217,11 +217,13 @@ const incidents = {
         Object.entries(payload).forEach(([k, v]) => {
             if (v !== null && v !== undefined) fd.append(k, v);
         });
-        // We use POST with a _method field for full compatibility with file uploads.
-        fd.append('_method', 'PUT');
+        // **FIX:** The backend route `api/incidents/{id}` expects a POST request for updates.
+        // The `_method: 'PUT'` field (method spoofing) was causing the error because the API
+        // middleware doesn't handle it. Removing this line makes it a standard POST request.
+        // fd.append('_method', 'PUT'); // <-- THIS LINE IS REMOVED
 
         const res = await fetch(`${API_BASE_URL}/incidents/${id}`, {
-            method: 'POST', // Note: Still POST
+            method: 'POST',
             headers: getHeaders(true), // isFormData = true
             body: fd,
         });

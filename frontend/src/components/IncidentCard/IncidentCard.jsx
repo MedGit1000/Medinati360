@@ -24,18 +24,32 @@ const IncidentCard = ({ incident, onClick }) => {
 
   // UPDATED: Helper to get a representative emoji for each new category
   const getCategoryIcon = (categoryName = "") => {
+    // Infrastructure et Voirie
     if (categoryName.includes("Voirie")) return "🛣️";
     if (categoryName.includes("Trottoirs")) return "🚶‍♀️";
     if (categoryName.includes("Éclairage")) return "💡";
+    if (categoryName.includes("Signalisation")) return "🚦";
+    if (categoryName.includes("Mobilier")) return "🏦";
+
+    // Environnement et Salubrité
     if (categoryName.includes("Déchets")) return "🗑️";
     if (categoryName.includes("Espaces Verts")) return "🌳";
-    if (categoryName.includes("Nuisances")) return "🔊";
-    if (categoryName.includes("Eau")) return "💧";
-    if (categoryName.includes("Mobilier")) return "🏦";
-    if (categoryName.includes("Transport")) return "🚎";
-    if (categoryName.includes("Signalisation")) return "🚦";
+    if (categoryName.includes("Pollution")) return "💨"; // Updated
     if (categoryName.includes("Animaux")) return "🐕";
+
+    // Services Publics & Réseaux
+    if (categoryName.includes("Eau")) return "💧";
+    if (categoryName.includes("Transport")) return "🚎";
+    if (categoryName.includes("Électrique")) return "⚡"; // New
+    if (categoryName.includes("Internet")) return "📶"; // New
+    if (categoryName.includes("Guichet")) return "🏧"; // New
+    if (categoryName.includes("Postaux")) return "📮"; // New
+
+    // Constructions & Sécurité
     if (categoryName.includes("Bâtiments")) return "🏗️";
+    if (categoryName.includes("Stationnement")) return "🅿️"; // New
+    if (categoryName.includes("Vandalisme")) return "🎨"; // New
+
     return "📋"; // Default icon
   };
 
